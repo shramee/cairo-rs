@@ -80,3 +80,14 @@ StarkWare's STARK Math blog series:
 * [Arithmetization II](https://medium.com/starkware/arithmetization-ii-403c3b3f4355)
 * [Low Degree Testing](https://medium.com/starkware/low-degree-testing-f7614f5172db)
 * [A Framework for Efficient STARKs](https://medium.com/starkware/a-framework-for-efficient-starks-19608ba06fbe)
+
+## Code Coverage
+Track of the project's code coverage: [Codecov](https://app.codecov.io/gh/lambdaclass/cleopatra_cairo)
+
+---
+# Aki's notes
+
+- how to run a single test `cargo test is_zero_relocatable_value -- --nocapture`
+- how to see test output `cargo test -- --nocapture`
+- how to filter
+- how to use events, spans, instrument, capture fields

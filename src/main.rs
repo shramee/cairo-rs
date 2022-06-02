@@ -4,4 +4,9 @@ mod types;
 mod utils;
 mod vm;
 
-fn main() {}
+use tracing::info;
+
+fn main() {
+    utils::setup_tracing();
+    info!("hello world");
+}

@@ -10,6 +10,7 @@ use num_bigint::BigInt;
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::collections::BTreeMap;
 use std::fmt;
+use tracing::instrument;
 
 #[derive(PartialEq)]
 pub struct Operands {
@@ -74,6 +75,7 @@ impl VirtualMachine {
             skip_instruction_execution: false,
         }
     }
+
     ///Returns the encoded instruction (the value at pc) and the immediate value (the value at pc + 1, if it exists in the memory).
     fn get_instruction_encoding(
         &self,
@@ -91,6 +93,7 @@ impl VirtualMachine {
             Ok((encoding_ref, optional_imm))
         }
     }
+
     fn update_fp(&mut self, instruction: &Instruction, operands: &Operands) {
         let new_fp: MaybeRelocatable = match instruction.fp_update {
             FpUpdate::APPlus2 => self.run_context.ap.add_usize_mod(2, None),
@@ -172,6 +175,7 @@ impl VirtualMachine {
 
     /// Returns true if the value is zero
     /// Used for JNZ instructions
+    #[instrument]
     fn is_zero(addr: MaybeRelocatable) -> Result<bool, VirtualMachineError> {
         match addr {
             MaybeRelocatable::Int(num) => Ok(num == bigint!(0)),
@@ -535,6 +539,8 @@ mod tests {
     use crate::types::instruction::{ApUpdate, FpUpdate, Op1Addr, Opcode, PcUpdate, Register, Res};
     use crate::{relocatable, types::relocatable::Relocatable};
     use num_bigint::Sign;
+    use tracing::info;
+    use tracing_test::traced_test;
 
     #[test]
     fn get_instruction_encoding_successful_without_imm() {
@@ -1226,7 +1232,9 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn is_zero_relocatable_value() {
+        info!("XXX");
         let value = MaybeRelocatable::from((1, 2));
         assert_eq!(
             Err(VirtualMachineError::PureValue),
@@ -1235,7 +1243,9 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn is_zero_relocatable_value_negative() {
+        info!("XXX");
         let value = MaybeRelocatable::from((1, 1));
         assert_eq!(
             Err(VirtualMachineError::PureValue),
