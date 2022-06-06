@@ -539,6 +539,7 @@ mod tests {
     use crate::types::instruction::{ApUpdate, FpUpdate, Op1Addr, Opcode, PcUpdate, Register, Res};
     use crate::{relocatable, types::relocatable::Relocatable};
     use num_bigint::Sign;
+    use test_env_log::test;
     use tracing::info;
     use tracing_test::traced_test;
 

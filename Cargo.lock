@@ -54,6 +54,7 @@ dependencies = [
  "rusty-hook",
  "serde",
  "serde_json",
+ "test-log",
  "tracing",
  "tracing-subscriber",
  "tracing-test",
@@ -305,6 +306,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "test-log"
+version = "0.2.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4235dbf7ea878b3ef12dea20a59c134b405a66aafc4fc2c7b9935916e289e735"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
