@@ -10,7 +10,7 @@ use num_bigint::BigInt;
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::collections::BTreeMap;
 use std::fmt;
-use tracing::instrument;
+use tracing::{info, trace};
 
 #[derive(PartialEq)]
 pub struct Operands {
@@ -175,8 +175,10 @@ impl VirtualMachine {
 
     /// Returns true if the value is zero
     /// Used for JNZ instructions
-    #[instrument]
+    #[tracing::instrument]
     fn is_zero(addr: MaybeRelocatable) -> Result<bool, VirtualMachineError> {
+        info!("");
+        trace!("testing MRL for zero: {:?}", addr);
         match addr {
             MaybeRelocatable::Int(num) => Ok(num == bigint!(0)),
             MaybeRelocatable::RelocatableValue(_rel_value) => Err(VirtualMachineError::PureValue),
