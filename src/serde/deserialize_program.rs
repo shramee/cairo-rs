@@ -59,6 +59,9 @@ impl Default for ApTracking {
 #[derive(Deserialize, Debug)]
 pub struct Identifier {
     pub pc: Option<usize>,
+    #[serde(rename(deserialize = "type"))]
+    pub type_: Option<String>,
+    pub value: Option<u128>,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
