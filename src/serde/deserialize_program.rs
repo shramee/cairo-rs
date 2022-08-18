@@ -61,7 +61,8 @@ pub struct Identifier {
     pub pc: Option<usize>,
     #[serde(rename(deserialize = "type"))]
     pub type_: Option<String>,
-    pub value: Option<u128>,
+    //#[serde(deserialize_with = "deserialize_const_value")]
+    pub value: Option<BigInt>,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
@@ -204,6 +205,50 @@ impl<'de> de::Visitor<'de> for ReferenceIdsVisitor {
     }
 }
 
+// struct ConstValueVisitor;
+
+// impl<'de> de::Visitor<'de> for ConstValueVisitor {
+//     type Value = BigInt;
+
+//     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+//         formatter.write_str("a number representing the value of a Cairo constant")
+//     }
+
+//     fn visit_i128<E>(self, value: i128) -> Result<Self::Value, E> where
+//     E: de::Error,
+//     {
+//         Ok(Into::<BigInt>::into(value))
+//     //     if value >= 0 {
+//     //         data.insert(key, BigInt::from_bytes_le(Sign::Plus, &value.to_le_bytes()));
+//     //     } else {
+//     //         data.insert(
+//     //             key,
+//     //             BigInt::from_bytes_le(Sign::Minus, &abs(value).to_le_bytes()),
+//     //         );
+//     //     }
+//     // }
+
+//     }
+
+//     // fn visit_i128<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+//     // where
+//     //     A: MapAccess<'de>,
+//     // {
+//     //     while let Some((key, value)) = map.next_entry::<String, i64>()? {
+//     //         if value >= 0 {
+//     //             data.insert(key, BigInt::from_bytes_le(Sign::Plus, &value.to_le_bytes()));
+//     //         } else {
+//     //             data.insert(
+//     //                 key,
+//     //                 BigInt::from_bytes_le(Sign::Minus, &abs(value).to_le_bytes()),
+//     //             );
+//     //         }
+//     //     }
+
+//     //     Ok(data)
+//     // }
+// }
+
 struct ValueAddressVisitor;
 
 impl<'de> de::Visitor<'de> for ValueAddressVisitor {
@@ -248,6 +293,12 @@ pub fn deserialize_value_address<'de, D: Deserializer<'de>>(
 ) -> Result<ValueAddress, D::Error> {
     d.deserialize_str(ValueAddressVisitor)
 }
+
+// pub fn deserialize_const_value<'de, D: Deserializer<'de>>(
+//     d: D,
+// ) -> Result<BigInt, D::Error> {
+//     d.deserialize_i128(ConstValueVisitor)
+// }
 
 pub fn deserialize_program_json(path: &Path) -> Result<ProgramJson, ProgramError> {
     let file = File::open(path)?;
