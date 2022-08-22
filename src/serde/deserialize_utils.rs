@@ -17,6 +17,8 @@ use std::fmt;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
+use super::deserialize_program::ReferenceType;
+
 #[derive(Debug, PartialEq)]
 pub enum ReferenceParseError {
     IntError(ParseIntError),
@@ -80,10 +82,13 @@ fn take_cast(input: &str) -> IResult<&str, &str> {
 }
 
 // Returns the first argument of the cast function from the value.
-fn take_cast_first_arg(input: &str) -> IResult<&str, &str> {
+fn take_cast_first_arg(input: &str) -> IResult<&str, (Option<(bool, Register, i32)>, Option<i32>)> {
     let (rem_input, _) = take_cast(input)?;
+    let (end_rem_input, res) = take_until(",")(rem_input)?;
+    let (rem_input, deref_res) = opt(alt((inner_dereference, no_inner_dereference)))(res)?;
+    let (_, offset_res) = opt(offset)(rem_input)?;
 
-    take_until(",")(rem_input).map(|(rem_input, res)| (res, rem_input))
+    Ok((end_rem_input, (deref_res, offset_res)))
 }
 
 fn register(input: &str) -> IResult<&str, Register> {
@@ -144,13 +149,26 @@ fn no_inner_dereference(input: &str) -> IResult<&str, (bool, Register, i32)> {
     Ok((rem_input, (false, register, offset)))
 }
 
+fn reference_type(input: &str) -> IResult<&str, ReferenceType> {
+    let (rem_input, res) = opt(take_until("*"))(input)?;
+
+    if let Some(_) = res {
+        let ref_type = match rem_input.matches("*").count() {
+            1 => ReferenceType::Pointer,
+            _ => ReferenceType::PointerToPointer,
+        };
+
+        Ok((rem_input, ref_type))
+    } else {
+        Ok((rem_input, ReferenceType::Value))
+    }
+}
+
 pub fn parse_value(input: &str) -> IResult<&str, ValueAddress> {
-    let (rem_input, (dereference, _, inner_deref, offs_or_imm)) = tuple((
-        outer_brackets,
-        take_cast_first_arg,
-        opt(alt((inner_dereference, no_inner_dereference))),
-        opt(offset),
-    ))(input)?;
+    let (rem_input, (dereference, parsed_cast_first_arg, ref_type)) =
+        tuple((outer_brackets, take_cast_first_arg, reference_type))(input)?;
+
+    let (inner_deref, offs_or_imm) = parsed_cast_first_arg;
 
     // check if there was any register and offset to be parsed
     let (inner_deref, reg, offs1) = if let Some((inner_deref, reg, offs1)) = inner_deref {
@@ -174,6 +192,7 @@ pub fn parse_value(input: &str) -> IResult<&str, ValueAddress> {
             immediate: None,
             dereference,
             inner_dereference: inner_deref,
+            ref_type,
         }
     } else {
         ValueAddress {
@@ -183,6 +202,7 @@ pub fn parse_value(input: &str) -> IResult<&str, ValueAddress> {
             immediate: Some(bigint!(offset_or_immediate)),
             dereference,
             inner_dereference: inner_deref,
+            ref_type,
         }
     };
 
@@ -192,7 +212,6 @@ pub fn parse_value(input: &str) -> IResult<&str, ValueAddress> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bigint;
 
     #[test]
     fn outer_brackets_test() {
@@ -217,7 +236,13 @@ mod tests {
         let value = "cast([fp + (-1)] + (-1), felt*)";
         let parsed = take_cast_first_arg(value);
 
-        assert_eq!(parsed, Ok(("[fp + (-1)] + (-1)", ", felt*")));
+        assert_eq!(
+            parsed,
+            Ok((
+                ", felt*",
+                (Some((true, Register::FP, -1_i32)), Some(-1_i32))
+            ))
+        );
     }
 
     #[test]
@@ -280,14 +305,16 @@ mod tests {
         assert_eq!(
             parsed,
             Ok((
-                "",
+                // "",
+                "*",
                 ValueAddress {
                     register: Some(Register::FP),
                     offset1: -1,
                     offset2: 2,
                     immediate: None,
                     dereference: true,
-                    inner_dereference: true
+                    inner_dereference: true,
+                    ref_type: ReferenceType::Pointer,
                 }
             ))
         );
@@ -301,14 +328,16 @@ mod tests {
         assert_eq!(
             parsed,
             Ok((
-                "",
+                // "",
+                "*",
                 ValueAddress {
                     register: Some(Register::AP),
                     offset1: 2,
                     offset2: 0,
                     immediate: Some(bigint!(0)),
                     dereference: false,
-                    inner_dereference: false
+                    inner_dereference: false,
+                    ref_type: ReferenceType::Pointer,
                 }
             ))
         );
@@ -321,17 +350,43 @@ mod tests {
         assert_eq!(
             parsed,
             Ok((
-                "",
+                // "",
+                "*",
                 ValueAddress {
                     register: None,
                     offset1: 0,
                     offset2: 0,
                     immediate: Some(bigint!(825323)),
                     dereference: false,
-                    inner_dereference: false
+                    inner_dereference: false,
+                    ref_type: ReferenceType::Pointer,
                 }
             ))
         );
+    }
+
+    #[test]
+    fn parse_reference_type_value() {
+        let value = ", felt";
+        let parsed = reference_type(value);
+
+        assert_eq!(parsed, Ok((", felt", ReferenceType::Value)));
+    }
+
+    #[test]
+    fn parse_reference_type_pointer() {
+        let value = ", felt*";
+        let parsed = reference_type(value);
+
+        assert_eq!(parsed, Ok(("*", ReferenceType::Pointer)));
+    }
+
+    #[test]
+    fn parse_reference_type_ptr_to_ptr() {
+        let value = ", felt**";
+        let parsed = reference_type(value);
+
+        assert_eq!(parsed, Ok(("**", ReferenceType::PointerToPointer)));
     }
 
     #[test]
@@ -342,14 +397,16 @@ mod tests {
         assert_eq!(
             parsed,
             Ok((
-                "",
+                // "",
+                "*",
                 ValueAddress {
                     register: Some(Register::AP),
                     offset1: 0,
                     offset2: -1,
                     immediate: None,
                     dereference: true,
-                    inner_dereference: false
+                    inner_dereference: false,
+                    ref_type: ReferenceType::Pointer,
                 }
             ))
         );

@@ -74,6 +74,13 @@ pub struct Reference {
     pub value_address: ValueAddress,
 }
 
+#[derive(Deserialize, Clone, Debug, PartialEq)]
+pub enum ReferenceType {
+    Value,
+    Pointer,
+    PointerToPointer,
+}
+
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub struct ValueAddress {
     pub register: Option<Register>,
@@ -82,6 +89,7 @@ pub struct ValueAddress {
     pub immediate: Option<BigInt>,
     pub dereference: bool,
     pub inner_dereference: bool,
+    pub ref_type: ReferenceType,
 }
 
 impl ValueAddress {
@@ -100,6 +108,7 @@ impl ValueAddress {
             immediate: Some(bigint!(99)),
             dereference: false,
             inner_dereference: false,
+            ref_type: ReferenceType::Value,
         }
     }
 }
@@ -456,6 +465,7 @@ mod tests {
                         immediate: None,
                         dereference: true,
                         inner_dereference: false,
+                        ref_type: ReferenceType::Pointer,
                     },
                 },
                 Reference {
@@ -471,6 +481,7 @@ mod tests {
                         immediate: None,
                         dereference: true,
                         inner_dereference: false,
+                        ref_type: ReferenceType::Pointer,
                     },
                 },
                 Reference {
@@ -486,6 +497,7 @@ mod tests {
                         immediate: Some(bigint!(2)),
                         dereference: false,
                         inner_dereference: true,
+                        ref_type: ReferenceType::Value,
                     },
                 },
                 Reference {
@@ -501,6 +513,7 @@ mod tests {
                         immediate: None,
                         dereference: true,
                         inner_dereference: false,
+                        ref_type: ReferenceType::Pointer,
                     },
                 },
             ],

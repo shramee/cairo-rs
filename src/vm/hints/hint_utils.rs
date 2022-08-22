@@ -419,6 +419,11 @@ pub fn get_integer_from_var_name<'a>(
     vm_proxy.memory.get_integer(&relocatable)
 }
 
+// pub fn get_var_value(var_name: &str,
+//     ids: &HashMap<String, usize>,
+//     vm_proxy: &'a VMProxy,
+//     hint_ap_tracking: Option<&ApTracking>) -> Result<
+
 ///Implements hint: memory[ap] = segments.add()
 pub fn add_segment(vm_proxy: &mut VMProxy) -> Result<(), VirtualMachineError> {
     let new_segment_base = vm_proxy.segments.add(vm_proxy.memory, None);
