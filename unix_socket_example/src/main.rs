@@ -30,7 +30,9 @@ impl Memory {
 fn encode_memory(buff: &mut Vec<u8>, memory: &Memory) {
     for m in &memory.data {
         let MaybeRelocatable::Int(n) = m; 
-        buff.append(&mut n.to_signed_bytes_be());
+        let mut bytes = n.to_signed_bytes_le();
+        bytes.resize(32, 0);
+        buff.append(&mut bytes);
     }
 }
 
@@ -49,5 +51,5 @@ fn main() {
     stream.write_all(&m_bytes).unwrap();
     let elapsed = now.elapsed();
 
-    println!("Time taken: {}s", elapsed.as_millis());
+    println!("Time taken: {}ms", elapsed.as_millis());
 }
