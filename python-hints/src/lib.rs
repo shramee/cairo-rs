@@ -114,7 +114,7 @@ pub struct PySegmentManager {
 
 #[pymethods]
 impl PySegmentManager {
-    pub fn add_segment(&self) -> PyResult<PyRelocatable> {
+    pub fn add(&self) -> PyResult<PyRelocatable> {
         self.operation_sender
             .send(MemoryOperation::AddSegment)
             .unwrap();
@@ -261,11 +261,11 @@ fn run_python_hint(
                 py,
                 memory segments ap fp,
                 r#"
-            result = segments.add_segment()
-            print(result)
+            result = segments.add()
+            print(f'Segment added {result}')
             memory[ap] = 16
             print(f'Memory address {ap} has been written')
-            print('Reading from ap: ', memory[ap])
+            print(f'Reading from {ap}: {memory[ap]}')
             "#
             );
             println!(" -- Ending python hint -- ");
