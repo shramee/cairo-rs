@@ -17,7 +17,7 @@ Go to `python_executor` folder
 `cd ../python_executor`
 
 Set the dynamic library path
-`export DYLD_LIBRARY_PATH="/Users/lambda/cairo-rs/rust_python_ffi/vm_poc/.env/lib"`
+`export DYLD_LIBRARY_PATH="../vm_poc/.env/lib"`
 
 Run the project
 `cargo r`
