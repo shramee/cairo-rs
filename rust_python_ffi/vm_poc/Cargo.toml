@@ -1,0 +1,13 @@
+[package]
+name = "vm_poc"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "vm_poc"
+crate-type = ["lib", "cdylib"]
+#crate-type = ["lib"]
+
+[dependencies]
+pyo3 = { version = "0.17.1", features = ["extension-module"] }
+#pyo3 = { version = "0.17.1", features = ["auto-initialize"] }

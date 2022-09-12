@@ -1,0 +1,11 @@
+[package]
+name = "python_executor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vm_poc = { path = "../vm_poc" }
+
+[dependencies.pyo3]
+version = "0.17.1"
+features = ["auto-initialize"]
