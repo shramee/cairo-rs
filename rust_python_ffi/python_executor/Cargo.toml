@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-vm_poc = { path = "../vm_poc" }
+#vm_poc = { path = "../vm_poc" }
 
 [dependencies.pyo3]
 version = "0.17.1"

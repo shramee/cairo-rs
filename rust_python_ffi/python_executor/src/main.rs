@@ -1,3 +1,5 @@
+pub mod vm_poc;
+
 use vm_poc::{to_pymem, Memory, PyMemory};
 use pyo3::{prelude::*, types::PyDict};
 
@@ -13,7 +15,9 @@ fn main() -> PyResult<()> {
         //println!("Pointer PyCell: {:?}", memory.get_type_ptr());
 
         let locals = PyDict::new(py);
+        let m = py.import("vm_poc").unwrap();
         locals.set_item("memory", memory).unwrap();
+        locals.set_item("vm_poc", m).unwrap();
         py.run(
             r#"
 print("Memory before insert: ", memory.data)
@@ -21,9 +25,10 @@ memory.insert(2)
 #print("Memory pointer: ", memory)
 print("Memory after insert: ", memory.data)
 
-import vm_poc
+#import vm_poc
 vm_poc.mem_insert(memory, 2)
-
+#v = vm_poc.get_mem()
+#print(v.data)
 print("Memory after FFI insert: ", memory.data)
         "#,
             None,

@@ -8,6 +8,10 @@ name = "vm_poc"
 crate-type = ["lib", "cdylib"]
 #crate-type = ["lib"]
 
-[dependencies]
-pyo3 = { version = "0.17.1", features = ["extension-module"] }
+#[dependencies]
+#pyo3 = { version = "0.17.1", features = ["extension-module"] }
 #pyo3 = { version = "0.17.1", features = ["auto-initialize"] }
+
+[dependencies.pyo3]
+version = "0.16.3"
+features = ["auto-initialize"]
