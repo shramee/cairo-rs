@@ -131,6 +131,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37ccbd214614c6783386c1af30caf03192f17891059cecc394b4fb119e363de3"
 
 [[package]]
+name = "cairo-py"
+version = "0.1.0"
+dependencies = [
+ "cairo-rs",
+ "num-bigint",
+ "pyo3",
+]
+
+[[package]]
 name = "cairo-rs"
 version = "0.1.0"
 dependencies = [
@@ -900,15 +909,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "python-lib"
-version = "0.1.0"
-dependencies = [
- "cairo-rs",
- "num-bigint",
- "pyo3",
 ]
 
 [[package]]
