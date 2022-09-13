@@ -903,6 +903,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "python-lib"
+version = "0.1.0"
+dependencies = [
+ "cairo-rs",
+ "num-bigint",
+ "pyo3",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
