@@ -1,11 +1,11 @@
+use pyo3::PyRefMut;
 use pyo3::{
     prelude::*,
     types::{self, PyCFunction, PyDict},
-    
 };
-use pyo3::PyRefMut;
 
 use python_executor::vm_poc::{to_pymem, Memory, PyMemory};
+// use pyo3::AsPyPointer;
 
 fn main() -> PyResult<()> {
     Python::with_gil(|py| {
@@ -36,16 +36,28 @@ memory.insert(2)
 print("Memory after method insert: ", memory.data)
 mem_insert(memory, 2)
 print("Memory after function insert: ", memory.data)
+print("Memory object in Python: ", memory)
         "#,
             None,
             Some(locals),
         )
         .unwrap();
 
-        let mem: PyMemory = locals.get_item("memory").unwrap().extract().unwrap();
+        // let mem = locals.get_item("memory").unwrap().extract::<PyRef<PyMemory>>().unwrap().as_ptr();
+        let mem: PyRefMut<PyMemory> = locals.get_item("memory").unwrap().extract().unwrap();
+
+        // pymem = *mem;
 
         println!("Memory from Rust back again: {:?}", mem);
 
+        // println!("Original memory: {:?}", pymem);
         Ok(())
     })
 }
+
+// #[pymodule]
+// pub fn vm_poc(_py: Python, m: &PyModule) -> PyResult<()> {
+//     m.add_function(wrap_pyfunction!(mem_insert, m)?)?;
+//     m.add_function(wrap_pyfunction!(get_mem, m)?)?;
+//     Ok(())
+// }

@@ -18,12 +18,6 @@ pub struct PyMemory {
     pub data: Vec<u32>,
 }
 
-// impl pyo3::From<PyAny> for PyMemory {
-//     fn extract(any: &PyAny) -> PyResult<Self> {
-//         Ok(any.downcast().unwrap())
-//     }
-// }
-
 #[pymethods]
 impl PyMemory {
     #[new]
