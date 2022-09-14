@@ -7,3 +7,4 @@
 **/*.memory
 **/*.swp
 bench/results
+rust_python_ffi/vm_poc/.env/
