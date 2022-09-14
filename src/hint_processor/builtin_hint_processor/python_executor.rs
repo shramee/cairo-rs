@@ -380,6 +380,7 @@ impl PythonExecutor {
         pyo3::prepare_freethreaded_python();
         let gil = Python::acquire_gil();
         let py = gil.python();
+        let py_scope = get_py_scope(exec_scopes)?;
         let new_vars = py.allow_threads(move || -> JoinHandle<Result<HashMap<std::string::String, Py<PyAny>>, VirtualMachineError>>{
             let new_vars = thread::spawn(move || -> Result<HashMap::<String, PyObject>, VirtualMachineError> {
                 println!(" -- Starting python hint execution -- ");
@@ -398,6 +399,9 @@ impl PythonExecutor {
                 let fp = pycell!(py, PyRelocatable::new((1, fp)));
                 let globals = PyDict::new(py);
                 let locals = PyDict::new(py);
+                for (name, value) in py_scope.iter() {
+                    locals.set_item(name, value).map_err(Into::<VirtualMachineError>::into)?;
+                }
                 globals.set_item("memory", memory).unwrap();
                 globals.set_item("ids", ids).unwrap();
                 globals.set_item("segments", segments).unwrap();
@@ -422,6 +426,26 @@ impl PythonExecutor {
         update_scope(exec_scopes, &new_vars);
         Ok(())
     }
+}
+
+fn get_py_scope(
+    exec_scopes: &mut ExecutionScopes,
+) -> Result<HashMap<String, PyObject>, VirtualMachineError> {
+    let mut py_scope = HashMap::<String, PyObject>::new();
+    for (name, value) in exec_scopes
+        .get_local_variables()
+        .ok_or(VirtualMachineError::ScopeError)?
+        .iter()
+    {
+        py_scope.insert(
+            name.to_string(),
+            value
+                .downcast_ref::<PyObject>()
+                .ok_or(VirtualMachineError::ScopeError)?
+                .clone(),
+        );
+    }
+    Ok(py_scope)
 }
 
 fn update_scope(
