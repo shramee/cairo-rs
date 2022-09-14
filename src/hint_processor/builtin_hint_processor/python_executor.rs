@@ -17,7 +17,7 @@ use super::{
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use num_bigint::BigInt;
-use pyo3::{prelude::*, py_run};
+use pyo3::{prelude::*, types::PyDict};
 
 #[derive(FromPyObject, Debug)]
 pub enum PyMaybeRelocatable {
@@ -381,7 +381,13 @@ impl PythonExecutor {
                     PyCell::new(py, PyIds::new(operation_sender.clone(), result_receiver)).unwrap();
                 let ap = PyCell::new(py, PyRelocatable::new((1, ap))).unwrap();
                 let fp = PyCell::new(py, PyRelocatable::new((1, fp))).unwrap();
-                py_run!(py, memory segments ap fp ids, &code);
+                let locals = PyDict::new(py);
+                locals.set_item("memory", memory).unwrap();
+                locals.set_item("segments", segments).unwrap();
+                locals.set_item("ap", ap).unwrap();
+                locals.set_item("fp", fp).unwrap();
+                locals.set_item("ids", ids).unwrap();
+                py.run(&code, None, Some(locals)).unwrap;
                 println!(" -- Ending python hint -- ");
                 operation_sender.send(Operation::End).unwrap();
             });
