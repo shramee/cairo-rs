@@ -471,7 +471,7 @@ impl VirtualMachine {
                 match result {
                     Ok(()) => (),
                     Err(VirtualMachineError::UnknownHint(_)) => {
-                        PythonExecutor::execute_hint(self, hint_data)?
+                        PythonExecutor::execute_hint(self, hint_data, exec_scopes)?
                     }
                     Err(_) => return result,
                 }
