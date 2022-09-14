@@ -39,6 +39,7 @@ pub fn to_pymem(mem: Memory) -> PyMemory {
 // For making a Python module that runs Rust code.
 
 fn execute_hint() -> PyResult<()> {
+
     let mem_insert = |args: &types::PyTuple, _kwargs: Option<&types::PyDict>|
     -> PyResult<()> {
     let mut mem: PyRefMut<PyMemory> = 
@@ -73,6 +74,7 @@ fn execute_hint() -> PyResult<()> {
         let mem_insert_func = PyCFunction::new_closure(mem_insert, py).unwrap();
 
         locals.set_item("memory", memory).unwrap();
+        
         locals.set_item("mem_insert", mem_insert_func).unwrap();
         py.run(
             r#"
@@ -89,7 +91,7 @@ print("Memory object in Python: ", memory)
         .unwrap();
 
         // let mem = locals.get_item("memory").unwrap().extract::<PyRef<PyMemory>>().unwrap().as_ptr();
-        let mem: PyRefMut<PyMemory> = locals.get_item("memory").unwrap().extract().unwrap();
+        let mem: PyRef<PyMemory> = locals.get_item("memory").unwrap().extract().unwrap();
 
         println!("Memory from Rust back again: {:?}", mem);
 
