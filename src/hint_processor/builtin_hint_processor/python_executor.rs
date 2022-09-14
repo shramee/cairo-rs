@@ -1,7 +1,7 @@
 use std::{any::Any, collections::HashMap, thread};
 
 use crate::{
-    bigint,
+    bigint, bigint_str,
     hint_processor::{
         builtin_hint_processor::python_executor_helpers::get_value_from_reference,
         hint_processor_definition::HintReference, hint_processor_utils::bigint_to_usize,
@@ -19,9 +19,63 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use num_bigint::BigInt;
 use pyo3::{prelude::*, types::PyDict};
 
+#[derive(Debug)]
+#[pyclass]
+pub struct PyBigInt {
+    value: String,
+}
+
+impl ToPyObject for PyBigInt {
+    fn to_object(&self, py: Python<'_>) -> PyObject {
+        let number_string = self.value.clone();
+        let pystring = number_string.into_py(py);
+        let locals = PyDict::new(py);
+        locals.set_item("pystring", pystring).unwrap();
+        let result = py.eval("int(pystring)", None, Some(locals)).unwrap();
+        result.to_object(py)
+    }
+}
+
+impl<'a> FromPyObject<'a> for PyBigInt {
+    fn extract(ob: &'a PyAny) -> PyResult<Self> {
+        let ob_as_string = ob.to_string();
+        Ok(PyBigInt {
+            value: ob_as_string,
+        })
+    }
+}
+
+impl From<PyBigInt> for BigInt {
+    fn from(py_object: PyBigInt) -> Self {
+        bigint_str!(py_object.value.as_bytes())
+    }
+}
+
+impl From<&PyBigInt> for BigInt {
+    fn from(py_object: &PyBigInt) -> Self {
+        bigint_str!(py_object.value.as_bytes())
+    }
+}
+
+impl From<BigInt> for PyBigInt {
+    fn from(bi: BigInt) -> Self {
+        PyBigInt {
+            value: bi.to_string(),
+        }
+    }
+}
+
+impl From<&BigInt> for PyBigInt {
+    fn from(bi: &BigInt) -> Self {
+        PyBigInt {
+            value: bi.to_string(),
+        }
+    }
+}
+
 #[derive(FromPyObject, Debug)]
 pub enum PyMaybeRelocatable {
-    Int(BigInt),
+    Int(PyBigInt),
     RelocatableValue(PyRelocatable),
 }
 
@@ -31,7 +85,7 @@ impl From<MaybeRelocatable> for PyMaybeRelocatable {
             MaybeRelocatable::RelocatableValue(rel) => PyMaybeRelocatable::RelocatableValue(
                 PyRelocatable::new((rel.segment_index, rel.offset)),
             ),
-            MaybeRelocatable::Int(num) => PyMaybeRelocatable::Int(num),
+            MaybeRelocatable::Int(num) => PyMaybeRelocatable::Int(PyBigInt::from(num)),
         }
     }
 }
@@ -42,7 +96,7 @@ impl From<&MaybeRelocatable> for PyMaybeRelocatable {
             MaybeRelocatable::RelocatableValue(rel) => PyMaybeRelocatable::RelocatableValue(
                 PyRelocatable::new((rel.segment_index, rel.offset)),
             ),
-            MaybeRelocatable::Int(num) => PyMaybeRelocatable::Int(num.clone()),
+            MaybeRelocatable::Int(num) => PyMaybeRelocatable::Int(PyBigInt::from(num)),
         }
     }
 }
@@ -53,7 +107,7 @@ impl From<PyMaybeRelocatable> for MaybeRelocatable {
             PyMaybeRelocatable::RelocatableValue(rel) => {
                 MaybeRelocatable::RelocatableValue(Relocatable::from((rel.index, rel.offset)))
             }
-            PyMaybeRelocatable::Int(num) => MaybeRelocatable::Int(num),
+            PyMaybeRelocatable::Int(num) => MaybeRelocatable::Int(BigInt::from(num)),
         }
     }
 }
@@ -64,7 +118,7 @@ impl From<&PyMaybeRelocatable> for MaybeRelocatable {
             PyMaybeRelocatable::RelocatableValue(rel) => {
                 MaybeRelocatable::RelocatableValue(Relocatable::from((rel.index, rel.offset)))
             }
-            PyMaybeRelocatable::Int(num) => MaybeRelocatable::Int(num.clone()),
+            PyMaybeRelocatable::Int(num) => MaybeRelocatable::Int(BigInt::from(num)),
         }
     }
 }
@@ -98,16 +152,16 @@ impl PyRelocatable {
             PyMaybeRelocatable::Int(value) => {
                 Ok(PyMaybeRelocatable::RelocatableValue(PyRelocatable {
                     index: self.index,
-                    offset: self.offset - bigint_to_usize(&value).unwrap(),
+                    offset: self.offset - bigint_to_usize(&BigInt::from(value)).unwrap(),
                 })
                 .to_object(py))
             }
             PyMaybeRelocatable::RelocatableValue(address) => {
                 if self.index == address.index && self.offset >= address.offset {
-                    return Ok(
-                        PyMaybeRelocatable::Int(bigint!(self.offset - address.offset))
-                            .to_object(py),
-                    );
+                    return Ok(PyMaybeRelocatable::Int(PyBigInt::from(bigint!(
+                        self.offset - address.offset
+                    )))
+                    .to_object(py));
                 }
                 todo!()
             }
@@ -132,7 +186,12 @@ impl ToPyObject for PyMaybeRelocatable {
     fn to_object(&self, py: Python<'_>) -> PyObject {
         match self {
             PyMaybeRelocatable::RelocatableValue(address) => address.clone().into_py(py),
-            PyMaybeRelocatable::Int(value) => value.clone().into_py(py),
+            PyMaybeRelocatable::Int(value) => {
+                let cloned_value = PyBigInt {
+                    value: value.value.clone(),
+                };
+                cloned_value.into_py(py)
+            }
         }
     }
 }
@@ -387,7 +446,7 @@ impl PythonExecutor {
                 locals.set_item("ap", ap).unwrap();
                 locals.set_item("fp", fp).unwrap();
                 locals.set_item("ids", ids).unwrap();
-                py.run(&code, None, Some(locals)).unwrap;
+                py.run(&code, None, Some(locals)).unwrap();
                 println!(" -- Ending python hint -- ");
                 operation_sender.send(Operation::End).unwrap();
             });
