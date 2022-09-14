@@ -178,6 +178,7 @@ pub enum Operation {
     WriteIds(String, PyMaybeRelocatable),
     WriteVecArg(PyRelocatable, Vec<PyMaybeRelocatable>),
     End,
+    ExitScope,
 }
 
 #[derive(Debug)]
@@ -295,6 +296,44 @@ impl PyIds {
     }
 }
 
+//TODO: Add this to module
+#[pyfunction(name = "vm_exit_scope")]
+#[pyo3(pass_module)]
+fn vm_exit_scope(module: &PyModule) -> PyResult<()> {
+    (module.getattr("scope")? as &dyn Any)
+        .downcast_ref::<PyScope>()
+        .unwrap()
+        .exit_scope()
+}
+
+//TODO: Add vm_enter_scope
+
+#[pyclass]
+pub struct PyScope {
+    operation_sender: Sender<Operation>,
+    result_receiver: Receiver<OperationResult>,
+}
+
+#[pymethods]
+impl PyScope {
+    pub fn exit_scope(&self) -> PyResult<()> {
+        send_operation(&self.operation_sender, Operation::ExitScope)?;
+        check_operation_success(&self.result_receiver, "vm_exit_scope")
+    }
+}
+
+impl PyScope {
+    pub fn new(
+        operation_sender: Sender<Operation>,
+        result_receiver: Receiver<OperationResult>,
+    ) -> PyScope {
+        PyScope {
+            operation_sender,
+            result_receiver,
+        }
+    }
+}
+
 fn handle_messages(
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
@@ -349,16 +388,14 @@ fn handle_messages(
                 write_py_vec_args(&mut vm.memory, &ptr, &arg, &vm.prime)?;
                 send_result(&result_sender, OperationResult::Success)?;
             }
+            //TODO: Handle this case
+            //Proposed solution: Make this function return an enum ScopeOperation::Exit
+            //(Other variants should be Enter and NoOp)
+            Operation::ExitScope => println!("VM_EXIT_SCOPE"),
+            //TODO: Handle exter_scope -> return ScopeOperation::Enter(vars)(possible conflicts with PyAny and threads)
         }
     }
     Ok(())
-}
-
-pub enum ScopeOperation {
-    NoOperation,
-    Exit,
-    Enter(Vec<PyObject>),
-    AddValues(Vec<PyObject>),
 }
 
 pub struct PythonExecutor {}
@@ -394,6 +431,10 @@ impl PythonExecutor {
                     py,
                     PySegmentManager::new(operation_sender.clone(), result_receiver.clone())
                 );
+                let scope = pycell!(
+                    py,
+                    PyScope::new(operation_sender.clone(), result_receiver.clone())
+                );
                 let ids = pycell!(py, PyIds::new(operation_sender.clone(), result_receiver));
                 let ap = pycell!(py, PyRelocatable::new((1, ap)));
                 let fp = pycell!(py, PyRelocatable::new((1, fp)));
@@ -405,6 +446,7 @@ impl PythonExecutor {
                 globals.set_item("memory", memory).unwrap();
                 globals.set_item("ids", ids).unwrap();
                 globals.set_item("segments", segments).unwrap();
+                globals.set_item("scope", scope).unwrap();
                 globals.set_item("ap", ap).unwrap();
                 globals.set_item("fp", fp).unwrap();
                 py.run(&code, Some(globals), Some(locals)).unwrap();
