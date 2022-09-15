@@ -324,7 +324,7 @@ impl PythonExecutor {
                     .send(Operation::End)
                     .map_err(|_| VirtualMachineError::PythonExecutorChannel)?;
                 Ok(get_scope_variables(locals, py))
-            }).join().unwrap().unwrap();
+            });
             let mut new_scope = None;
             handle_messages(
                 &mut new_scope,
@@ -334,7 +334,7 @@ impl PythonExecutor {
                 result_sender,
                 vm,
             ).unwrap();
-            Ok((new_vars, new_scope))
+            Ok((new_vars.join().unwrap().unwrap(), new_scope))
         }).unwrap();
         update_scope(exec_scopes, &new_vars);
         // This is a pretty horrible wip. Something similar could be done for exit_scope
