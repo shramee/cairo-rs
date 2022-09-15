@@ -36,6 +36,7 @@ pub enum Operation {
     WriteIds(String, PyMaybeRelocatable),
     WriteVecArg(PyRelocatable, Vec<PyMaybeRelocatable>),
     End,
+    EnterScope(HashMap<String, PyObject>),
     ExitScope,
 }
 
@@ -177,6 +178,11 @@ impl PyScope {
         send_operation(&self.operation_sender, Operation::ExitScope)?;
         check_operation_success(&self.result_receiver, "vm_exit_scope")
     }
+
+    pub fn enter_scope(&self, new_scope: HashMap<String, PyObject>) -> PyResult<()> {
+        send_operation(&self.operation_sender, Operation::EnterScope(new_scope))?;
+        check_operation_success(&self.result_receiver, "vm_enter_scope")
+    }
 }
 
 impl PyScope {
@@ -248,8 +254,11 @@ fn handle_messages(
             //TODO: Handle this case
             //Proposed solution: Make this function return an enum ScopeOperation::Exit
             //(Other variants should be Enter and NoOp)
-            Operation::ExitScope => println!("VM_EXIT_SCOPE"),
+            Operation::ExitScope => {
+                println!("VM_EXIT_SCOPE");
+            }
             //TODO: Handle exter_scope -> return ScopeOperation::Enter(vars)(possible conflicts with PyAny and threads)
+            Operation::EnterScope(_scope) => send_result(&result_sender, OperationResult::Success)?,
         }
     }
     Ok(())
@@ -365,6 +374,14 @@ fn get_scope_variables(locals: &PyDict, py: Python) -> HashMap<String, PyObject>
         new_locals.insert(name.to_string(), pyvalue.to_object(py));
     }
     new_locals
+}
+
+fn enter_scope(exec_scopes: &mut ExecutionScopes, new_scope: &HashMap<String, PyObject>) {
+    let mut transformed_scope = HashMap::new();
+    for (key, value) in new_scope.iter() {
+        transformed_scope.insert(key.to_string(), any_box!(value.clone()));
+    }
+    exec_scopes.enter_scope(transformed_scope);
 }
 
 fn send_result(
