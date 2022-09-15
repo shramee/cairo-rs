@@ -154,8 +154,7 @@ impl PyIds {
     }
 }
 
-//TODO: Add this to module
-#[pyfunction(name = "vm_exit_scope")]
+#[pyfunction]
 #[pyo3(pass_module)]
 fn vm_exit_scope(module: &PyModule) -> PyResult<()> {
     (module.getattr("scope")? as &dyn Any)
@@ -296,6 +295,8 @@ impl PythonExecutor {
                 let ids = pycell!(py, PyIds::new(operation_sender.clone(), result_receiver));
                 let ap = pycell!(py, PyRelocatable::new((1, ap)));
                 let fp = pycell!(py, PyRelocatable::new((1, fp)));
+                let scope_module = PyModule::new(py,"cairo_scopes")?;
+                let vm_exit_scope = wrap_pyfunction!(vm_exit_scope, scope_module)?;
                 let globals = PyDict::new(py);
                 let locals = PyDict::new(py);
                 for (name, value) in py_scope.iter() {
@@ -307,6 +308,7 @@ impl PythonExecutor {
                 globals.set_item("scope", scope).unwrap();
                 globals.set_item("ap", ap).unwrap();
                 globals.set_item("fp", fp).unwrap();
+                globals.set_item("vm_exit_scope", vm_exit_scope).unwrap();
                 py.run(&code, Some(globals), Some(locals)).unwrap();
                 println!(" -- Ending python hint -- ");
                 operation_sender
