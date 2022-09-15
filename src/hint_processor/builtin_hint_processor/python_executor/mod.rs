@@ -6,11 +6,7 @@ use pybigint::PyBigInt;
 use pyrelocatable::*;
 use python_executor_helpers::*;
 
-use std::{
-    any::Any,
-    collections::HashMap,
-    thread::{self, JoinHandle},
-};
+use std::{any::Any, collections::HashMap, thread};
 
 use crate::{
     any_box,
@@ -198,6 +194,7 @@ impl PyScope {
 }
 
 fn handle_messages(
+    new_scope: &mut Option<HashMap<String, PyObject>>,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
     operation_receiver: Receiver<Operation>,
@@ -258,7 +255,10 @@ fn handle_messages(
                 println!("VM_EXIT_SCOPE");
             }
             //TODO: Handle exter_scope -> return ScopeOperation::Enter(vars)(possible conflicts with PyAny and threads)
-            Operation::EnterScope(_scope) => send_result(&result_sender, OperationResult::Success)?,
+            Operation::EnterScope(scope) => {
+                *new_scope = Some(scope);
+                send_result(&result_sender, OperationResult::Success)?;
+            }
         }
     }
     Ok(())
@@ -284,7 +284,7 @@ impl PythonExecutor {
         let gil = Python::acquire_gil();
         let py = gil.python();
         let py_scope = get_py_scope(exec_scopes)?;
-        let new_vars = py.allow_threads(move || -> JoinHandle<Result<HashMap<std::string::String, Py<PyAny>>, VirtualMachineError>>{
+        let (new_vars, new_scope) = py.allow_threads(move || -> Result<(HashMap<String, PyObject>, Option<HashMap<String, PyObject>>), VirtualMachineError>{
             let new_vars = thread::spawn(move || -> Result<HashMap::<String, PyObject>, VirtualMachineError> {
                 println!(" -- Starting python hint execution -- ");
                 let gil = Python::acquire_gil();
@@ -324,17 +324,24 @@ impl PythonExecutor {
                     .send(Operation::End)
                     .map_err(|_| VirtualMachineError::PythonExecutorChannel)?;
                 Ok(get_scope_variables(locals, py))
-            });
+            }).join().unwrap().unwrap();
+            let mut new_scope = None;
             handle_messages(
+                &mut new_scope,
                 &hint_data.ids_data,
                 &hint_data.ap_tracking,
                 operation_receiver,
                 result_sender,
                 vm,
             ).unwrap();
-            new_vars
-        }).join().unwrap().unwrap();
+            Ok((new_vars, new_scope))
+        }).unwrap();
         update_scope(exec_scopes, &new_vars);
+        // This is a pretty horrible wip. Something similar could be done for exit_scope
+        // (like making the thread return a boolean/the amount of times exit_scope should be called)
+        if let Some(scope) = new_scope {
+            enter_scope(exec_scopes, &scope);
+        }
         Ok(())
     }
 }
