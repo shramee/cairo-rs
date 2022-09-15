@@ -1,14 +1,13 @@
 
 use pyo3::{prelude::*, types::PyDict};
-use pyo3::PyRef;
-use vm_core::VM;
+use vm_core::{VM, HintRunner, Memory, MemoryProxy};
 
 // #[pyclass]
 // struct PyCellVM {
 //     vm: PyCell<PyVM>,
 // }
 
-#[pyclass]
+#[pyclass(unsendable)]
 pub struct PyVM {
     vm: VM,
 }
@@ -17,9 +16,10 @@ pub struct PyVM {
 impl PyVM {
     #[new]
     pub fn new() -> PyVM {
-       PyVM {
-        vm: VM::new(),
-       }
+        let hint_runner: Option<Box<dyn HintRunner>> = Some(Box::new(PythonHintRunner::new()));
+        PyVM {
+            vm: VM::new(hint_runner),
+        }
     }
 
     fn __repr__(&self) -> String {
@@ -43,11 +43,29 @@ impl PyVM {
         Ok(())
     }
 
-    pub fn run_hint(&mut self) {
-        let code = "rv = fibonacci(7)";
+}
+
+struct PythonHintRunner {
+
+}
+
+impl PythonHintRunner {
+    pub fn new() -> PythonHintRunner {
+        PythonHintRunner {}
+    }
+}
+
+#[pyclass]
+struct PythonMemoryProxy {
+    mp: MemoryProxy>,
+}
+
+impl HintRunner for PythonHintRunner {
+    fn run_hint(&self, memory: &mut Memory, code: &str) -> Result<(), ()> {
         Python::with_gil(|py| {
             let locals = PyDict::new(py);
-            //let vm_cell = PyCell::new(py, vm).unwrap();
+            let mp = MemoryProxy::new(memory);
+            let vm_cell = PyCell::new(py, mp).unwrap();
             //locals.set_item("vm", vm_cell).unwrap();
 
             py.run(
@@ -58,18 +76,10 @@ impl PyVM {
 
             let rv: u32 = locals.get_item("rv").unwrap().extract().unwrap();
             println!("{:?}", rv);
-        })
-
-    }
+        });
+        Ok(())
+    }    
 }
-
-// fn run_hint(code: &str) -> PyResult<()> {
-// }
-
-/*
-n = fibonacci(42)
-vm.memset(0, n)
-*/
 
 /// Formats the sum of two numbers as string.
 #[pyfunction]

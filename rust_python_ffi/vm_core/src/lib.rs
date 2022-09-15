@@ -1,22 +1,57 @@
-#[derive(Debug)]
+use std::fmt::{self, Debug};
+
 pub struct VM {
-    memory: Vec<usize>,
+    memory: Memory,
     code: Vec<usize>,
     ip: usize,
-    //hint_runner: (),
+    hint_runner: Option<Box<dyn HintRunner>>,
+}
+
+impl fmt::Debug for VM {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("VM")
+            .field("memory", &self.memory)
+            .field("code", &self.code)
+            .field("ip", &self.ip)
+            .finish()
+    }
+}
+
+#[derive(Debug)]
+pub struct Memory {
+    pub data: Vec<usize>,
+}
+
+pub struct MemoryProxy<'a> {
+    memory: &'a mut Memory, 
+}
+
+impl MemoryProxy<'_> {
+    pub fn new(memory: &mut Memory) -> MemoryProxy {
+        MemoryProxy { memory }
+    }
+}
+
+pub trait HintRunner {
+    fn run_hint(&self, memory: &mut Memory, code: &str) -> Result<(), ()>;
 }
 
 impl VM {
-    pub fn new() -> VM {
-        VM { memory: vec![0; 128], code: vec![0; 128], ip: 0 }//, hint_runner: () }
+    pub fn new(hint_runner: Option<Box<dyn HintRunner>>) -> VM {
+        VM {
+            memory: Memory { data: vec![0; 128] },
+            code: vec![0; 128],
+            ip: 0,
+            hint_runner,
+        }
     }
 
     pub fn memset(&mut self, n: usize, m: usize) {
-        self.memory[n] = m;
+        self.memory.data[n] = m;
     }
 
     pub fn memget(&self, i: usize) -> usize {
-        self.memory[i]
+        self.memory.data[i]
     }
 
     pub fn load(&mut self, code: &str) {
@@ -33,20 +68,27 @@ impl VM {
             match self.code[self.ip] {
                 1 => {
                     println!("opcode 1: noop")
-                },
+                }
                 2 => {
                     // EXECUTE HINT
-                },
-                _ => {
-                    return Err(())
+                    self.run_hint();
                 }
+                _ => return Err(()),
             }
             self.ip += 1;
         }
         Ok(())
     }
+
+    fn run_hint(&mut self) {
+        if let Some(hint_runner) = &self.hint_runner {
+            let code = "rv = fibonacci(7)";
+            hint_runner.run_hint(&mut self.memory, code).unwrap();
+        }
+
+    }
 }
- 
+
 #[cfg(test)]
 mod tests {
     use crate::VM;
