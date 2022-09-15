@@ -10,10 +10,13 @@ def fibonacci(n):
     return c
 
 def main():
+    mem = ffi.PyVmMemory()
+    mem.set(0, 42)
+    assert mem.get(0) == 42
+
     vm = ffi.PyVM()
-    vm.memset(0, 1)
-    assert vm.memget(0) == 1
-    vm.load("0123")
+    vm.load("11112")
+    vm.run()
     print(vm)
 
 if __name__ == '__main__':

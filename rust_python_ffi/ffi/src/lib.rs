@@ -1,15 +1,13 @@
-
 use pyo3::{prelude::*, types::PyDict};
-use vm_core::{VM, HintRunner, Memory, MemoryProxy};
-
-// #[pyclass]
-// struct PyCellVM {
-//     vm: PyCell<PyVM>,
-// }
+use vm_core::VM;
+use vm_core::HintRunner;
+use vm_core::Memory;
+// use vm_core::MemoryProxy;
+// use std::rc::Rc;
 
 #[pyclass(unsendable)]
 pub struct PyVM {
-    vm: VM,
+    vm: VM
 }
 
 #[pymethods]
@@ -26,14 +24,6 @@ impl PyVM {
         format!("{:?}", self.vm)
     }
 
-    pub fn memset(&mut self, n: usize, m: usize) {
-        self.vm.memset(n, m)
-    }
-
-    pub fn memget(&self, i: usize) -> usize {
-        self.vm.memget(i)
-    }
-
     pub fn load(&mut self, program: &str) {
         self.vm.load(program);
     }
@@ -45,29 +35,44 @@ impl PyVM {
 
 }
 
-struct PythonHintRunner {
-
+#[pyclass]
+pub struct PyVmMemory {
+    memory: Memory
 }
 
-impl PythonHintRunner {
-    pub fn new() -> PythonHintRunner {
-        PythonHintRunner {}
+#[pymethods]
+impl PyVmMemory {
+    #[new]
+    pub fn new() -> PyVmMemory {
+        PyVmMemory{memory: Memory::new()}
+    }
+
+    pub fn set(&mut self, n: usize, m: usize) {
+        self.memory.set(n, m)
+    }
+
+    pub fn get(&self, i: usize) -> usize {
+        self.memory.get(i)
     }
 }
 
-#[pyclass]
-struct PythonMemoryProxy {
-    mp: MemoryProxy>,
+struct PythonHintRunner {}
+
+impl PythonHintRunner {
+    pub fn new() -> PythonHintRunner {
+        PythonHintRunner{}
+    }
 }
 
 impl HintRunner for PythonHintRunner {
     fn run_hint(&self, memory: &mut Memory, code: &str) -> Result<(), ()> {
         Python::with_gil(|py| {
             let locals = PyDict::new(py);
-            let mp = MemoryProxy::new(memory);
-            let vm_cell = PyCell::new(py, mp).unwrap();
-            //locals.set_item("vm", vm_cell).unwrap();
 
+            let memory = PyVmMemory::new();
+            let vmm = PyCell::new(py, memory).unwrap();
+            locals.set_item("vm_memory", vmm).unwrap();
+            locals.set_item("x", 7).unwrap();
             py.run(
                 code,
                 None,
@@ -75,22 +80,16 @@ impl HintRunner for PythonHintRunner {
             ).unwrap();
 
             let rv: u32 = locals.get_item("rv").unwrap().extract().unwrap();
-            println!("{:?}", rv);
+            println!("rv = {:?}", rv);
         });
         Ok(())
     }    
-}
-
-/// Formats the sum of two numbers as string.
-#[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
 }
 
 /// A Python module implemented in Rust.
 #[pymodule]
 fn ffi(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyVM>()?;
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
+    m.add_class::<PyVmMemory>()?;
     Ok(())
 }

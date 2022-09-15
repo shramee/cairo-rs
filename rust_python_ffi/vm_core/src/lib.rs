@@ -1,4 +1,5 @@
 use std::fmt::{self, Debug};
+// use std::rc::Rc;
 
 pub struct VM {
     memory: Memory,
@@ -19,18 +20,42 @@ impl fmt::Debug for VM {
 
 #[derive(Debug)]
 pub struct Memory {
-    pub data: Vec<usize>,
+    data: Vec<usize>,
 }
 
-pub struct MemoryProxy<'a> {
-    memory: &'a mut Memory, 
-}
+impl Memory {
+    pub fn new() -> Memory {
+        Memory{data: vec![0; 128]}
+    }
 
-impl MemoryProxy<'_> {
-    pub fn new(memory: &mut Memory) -> MemoryProxy {
-        MemoryProxy { memory }
+    pub fn set(&mut self, n: usize, m: usize) {
+        self.data[n] = m;
+    }
+
+    pub fn get(&self, i: usize) -> usize {
+        self.data[i]
     }
 }
+
+// pub struct MemoryProxy<'a> {
+//     memory: &'a mut Memory, 
+// }
+
+// impl MemoryProxy<'_> {
+//     pub fn new(memory: &mut Memory) -> MemoryProxy {
+//         MemoryProxy { memory }
+//     }
+// }
+
+// pub struct VmProxy<'a> {
+//     vm: Rc<VM>, 
+// }
+
+// impl VmProxy {
+//     pub fn new(vm: VM) -> VmProxy {
+//         Rc::new()
+//     }
+// }
 
 pub trait HintRunner {
     fn run_hint(&self, memory: &mut Memory, code: &str) -> Result<(), ()>;
@@ -39,19 +64,11 @@ pub trait HintRunner {
 impl VM {
     pub fn new(hint_runner: Option<Box<dyn HintRunner>>) -> VM {
         VM {
-            memory: Memory { data: vec![0; 128] },
+            memory: Memory::new(),
             code: vec![0; 128],
             ip: 0,
             hint_runner,
         }
-    }
-
-    pub fn memset(&mut self, n: usize, m: usize) {
-        self.memory.data[n] = m;
-    }
-
-    pub fn memget(&self, i: usize) -> usize {
-        self.memory.data[i]
     }
 
     pub fn load(&mut self, code: &str) {
@@ -66,13 +83,8 @@ impl VM {
         // opcode 2: execute hint
         while self.code[self.ip] != 0 {
             match self.code[self.ip] {
-                1 => {
-                    println!("opcode 1: noop")
-                }
-                2 => {
-                    // EXECUTE HINT
-                    self.run_hint();
-                }
+                1 => {}
+                2 => { self.run_hint(); }
                 _ => return Err(()),
             }
             self.ip += 1;
@@ -82,7 +94,7 @@ impl VM {
 
     fn run_hint(&mut self) {
         if let Some(hint_runner) = &self.hint_runner {
-            let code = "rv = fibonacci(7)";
+            let code = "rv = fibonacci(x)";
             hint_runner.run_hint(&mut self.memory, code).unwrap();
         }
 
