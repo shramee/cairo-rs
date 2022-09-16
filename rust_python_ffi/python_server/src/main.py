@@ -10,10 +10,6 @@ def fibonacci(n):
     return c
 
 def main():
-    mem = ffi.PyVmMemory()
-    mem.set(0, 42)
-    assert mem.get(0) == 42
-
     vm = ffi.PyVM()
     vm.load("11112")
     vm.run()

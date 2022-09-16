@@ -2,8 +2,8 @@ use pyo3::{prelude::*, types::PyDict};
 use vm_core::VM;
 use vm_core::HintRunner;
 use vm_core::Memory;
-// use vm_core::MemoryProxy;
-// use std::rc::Rc;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 #[pyclass(unsendable)]
 pub struct PyVM {
@@ -29,30 +29,24 @@ impl PyVM {
     }
 
     pub fn run(&mut self) -> PyResult<()> {
-        self.vm.run();
+        self.vm.run().unwrap();
         Ok(())
     }
-
 }
 
-#[pyclass]
+#[pyclass(unsendable)]
 pub struct PyVmMemory {
-    memory: Memory
+    memory: Rc<RefCell<Memory>>
 }
 
 #[pymethods]
 impl PyVmMemory {
-    #[new]
-    pub fn new() -> PyVmMemory {
-        PyVmMemory{memory: Memory::new()}
-    }
-
     pub fn set(&mut self, n: usize, m: usize) {
-        self.memory.set(n, m)
+        self.memory.borrow_mut().set(n, m)
     }
 
     pub fn get(&self, i: usize) -> usize {
-        self.memory.get(i)
+        self.memory.borrow_mut().get(i)
     }
 }
 
@@ -65,25 +59,32 @@ impl PythonHintRunner {
 }
 
 impl HintRunner for PythonHintRunner {
-    fn run_hint(&self, memory: &mut Memory, code: &str) -> Result<(), ()> {
+    fn run_hint(&self, memory: Option<Rc<RefCell<Memory>>>, code: &str) -> Result<(), ()> {
         Python::with_gil(|py| {
             let locals = PyDict::new(py);
 
-            let memory = PyVmMemory::new();
-            let vmm = PyCell::new(py, memory).unwrap();
-            locals.set_item("vm_memory", vmm).unwrap();
-            locals.set_item("x", 7).unwrap();
-            py.run(
-                code,
-                None,
-                Some(locals),
-            ).unwrap();
+            if let Some(m) = memory {
+                let memory = PyVmMemory{memory: m};
+                let vmm = PyCell::new(py, memory).unwrap();
+                locals.set_item("vm_memory", vmm).unwrap();
 
-            let rv: u32 = locals.get_item("rv").unwrap().extract().unwrap();
-            println!("rv = {:?}", rv);
+                locals.set_item("x", 7).unwrap();
+                py.run(
+                    code,
+                    None,
+                    Some(locals),
+                ).unwrap();
+
+                let rv: u32 = locals.get_item("rv").unwrap().extract().unwrap();
+                println!("rv = {:?}", rv);
+
+                let rv = vmm.borrow_mut().get(16);
+                println!("vmm[16] = {:?}", rv);
+            }
+
         });
         Ok(())
-    }    
+    }
 }
 
 /// A Python module implemented in Rust.
