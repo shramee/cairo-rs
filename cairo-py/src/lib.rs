@@ -23,7 +23,10 @@ fn py_cairo_run(
     let mut cairo_runner =
         match cairo_run::cairo_run(&filename, &entrypoint, trace_enabled, &hint_processor) {
             Ok(runner) => runner,
-            Err(_error) => todo!(),
+            Err(error) => {
+                println!("{:?}", error);
+                todo!()
+            }
         };
 
     if let Some(trace_path) = trace_file {

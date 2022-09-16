@@ -160,6 +160,15 @@ fn vm_exit_scope(module: &PyModule) -> PyResult<()> {
         .exit_scope()
 }
 
+#[pyfunction]
+#[pyo3(pass_module)]
+fn vm_enter_scope(module: &PyModule, new_scope: PyScopeDict) -> PyResult<()> {
+    (module.getattr("scope")? as &dyn Any)
+        .downcast_ref::<PyScope>()
+        .unwrap()
+        .enter_scope(new_scope)
+}
+
 //TODO: Add vm_enter_scope
 
 type PyScopeDict = HashMap<String, PyObject>;
@@ -317,6 +326,7 @@ impl PythonExecutor {
                             let fp = pycell!(py, PyRelocatable::new((1, fp)));
                             let scope_module = PyModule::new(py, "cairo_scopes")?;
                             let vm_exit_scope = wrap_pyfunction!(vm_exit_scope, scope_module)?;
+                            let vm_enter_scope = wrap_pyfunction!(vm_enter_scope, scope_module)?;
                             let globals = PyDict::new(py);
                             let locals = PyDict::new(py);
                             for (name, value) in py_scope.iter() {
@@ -331,6 +341,7 @@ impl PythonExecutor {
                             globals.set_item("ap", ap).unwrap();
                             globals.set_item("fp", fp).unwrap();
                             globals.set_item("vm_exit_scope", vm_exit_scope).unwrap();
+                            globals.set_item("vm_enter_scope", vm_enter_scope).unwrap();
                             py.run(&code, Some(globals), Some(locals)).unwrap();
                             println!(" -- Ending python hint -- ");
                             operation_sender
