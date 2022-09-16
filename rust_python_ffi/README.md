@@ -1,24 +1,16 @@
 # Building
-
-Go to the `vm_poc` folder:
-`cd vm_poc`
-
-Create virtual environment and activate it:
+Create a Python virtual environment and activate it
+`cd ffi`
 `python -m venv .env`
 `source .env/bin/activate`
 
 Install maturin
 `pip install maturin`
 
-Build weels for CPython
-`maturin develop`
-
-Go to `python_executor` folder
-`cd ../python_executor`
-
 Set the dynamic library path
-`export DYLD_LIBRARY_PATH="../vm_poc/.env/lib"`
+`export DYLD_LIBRARY_PATH=".env/lib"`
 
-Run the project
-`cargo r`
+# Running the Python server
+`cd ../python_server`
+`make run`
 
