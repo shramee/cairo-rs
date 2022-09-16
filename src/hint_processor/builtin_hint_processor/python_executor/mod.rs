@@ -162,6 +162,8 @@ fn vm_exit_scope(module: &PyModule) -> PyResult<()> {
 
 //TODO: Add vm_enter_scope
 
+type PyScopeDict = HashMap<String, PyObject>;
+
 #[pyclass]
 pub struct PyScope {
     operation_sender: Sender<Operation>,
@@ -194,13 +196,14 @@ impl PyScope {
 }
 
 fn handle_messages(
-    new_scope: &mut Option<HashMap<String, PyObject>>,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
     operation_receiver: Receiver<Operation>,
     result_sender: Sender<OperationResult>,
     vm: &mut VirtualMachine,
-) -> Result<(), VirtualMachineError> {
+) -> Result<(Option<PyScopeDict>, bool), VirtualMachineError> {
+    let mut new_scope: Option<PyScopeDict> = None;
+    let mut exit_scope = false;
     loop {
         match operation_receiver
             .recv()
@@ -252,16 +255,17 @@ fn handle_messages(
             //Proposed solution: Make this function return an enum ScopeOperation::Exit
             //(Other variants should be Enter and NoOp)
             Operation::ExitScope => {
+                exit_scope = true;
                 println!("VM_EXIT_SCOPE");
             }
             //TODO: Handle exter_scope -> return ScopeOperation::Enter(vars)(possible conflicts with PyAny and threads)
             Operation::EnterScope(scope) => {
-                *new_scope = Some(scope);
+                new_scope = Some(scope);
                 send_result(&result_sender, OperationResult::Success)?;
             }
         }
     }
-    Ok(())
+    Ok((new_scope, exit_scope))
 }
 
 pub struct PythonExecutor {}
@@ -284,63 +288,76 @@ impl PythonExecutor {
         let gil = Python::acquire_gil();
         let py = gil.python();
         let py_scope = get_py_scope(exec_scopes)?;
-        let (new_vars, new_scope) = py.allow_threads(move || -> Result<(HashMap<String, PyObject>, Option<HashMap<String, PyObject>>), VirtualMachineError>{
-            let new_vars = thread::spawn(move || -> Result<HashMap::<String, PyObject>, VirtualMachineError> {
-                println!(" -- Starting python hint execution -- ");
-                let gil = Python::acquire_gil();
-                let py = gil.python();
-                let memory = pycell!(
-                    py,
-                    PyMemory::new(operation_sender.clone(), result_receiver.clone())
-                );
-                let segments = pycell!(
-                    py,
-                    PySegmentManager::new(operation_sender.clone(), result_receiver.clone())
-                );
-                let scope = pycell!(
-                    py,
-                    PyScope::new(operation_sender.clone(), result_receiver.clone())
-                );
-                let ids = pycell!(py, PyIds::new(operation_sender.clone(), result_receiver));
-                let ap = pycell!(py, PyRelocatable::new((1, ap)));
-                let fp = pycell!(py, PyRelocatable::new((1, fp)));
-                let scope_module = PyModule::new(py,"cairo_scopes")?;
-                let vm_exit_scope = wrap_pyfunction!(vm_exit_scope, scope_module)?;
-                let globals = PyDict::new(py);
-                let locals = PyDict::new(py);
-                for (name, value) in py_scope.iter() {
-                    locals.set_item(name, value).map_err(Into::<VirtualMachineError>::into)?;
-                }
-                globals.set_item("memory", memory).unwrap();
-                globals.set_item("ids", ids).unwrap();
-                globals.set_item("segments", segments).unwrap();
-                globals.set_item("scope", scope).unwrap();
-                globals.set_item("ap", ap).unwrap();
-                globals.set_item("fp", fp).unwrap();
-                globals.set_item("vm_exit_scope", vm_exit_scope).unwrap();
-                py.run(&code, Some(globals), Some(locals)).unwrap();
-                println!(" -- Ending python hint -- ");
-                operation_sender
-                    .send(Operation::End)
-                    .map_err(|_| VirtualMachineError::PythonExecutorChannel)?;
-                Ok(get_scope_variables(locals, py))
-            });
-            let mut new_scope = None;
-            handle_messages(
-                &mut new_scope,
-                &hint_data.ids_data,
-                &hint_data.ap_tracking,
-                operation_receiver,
-                result_sender,
-                vm,
-            ).unwrap();
-            Ok((new_vars.join().unwrap().unwrap(), new_scope))
-        }).unwrap();
+        let (new_vars, new_scope, exit_scope) = py
+            .allow_threads(
+                move || -> Result<(PyScopeDict, Option<PyScopeDict>, bool), VirtualMachineError> {
+                    let new_vars =
+                        thread::spawn(move || -> Result<PyScopeDict, VirtualMachineError> {
+                            println!(" -- Starting python hint execution -- ");
+                            let gil = Python::acquire_gil();
+                            let py = gil.python();
+                            let memory = pycell!(
+                                py,
+                                PyMemory::new(operation_sender.clone(), result_receiver.clone())
+                            );
+                            let segments = pycell!(
+                                py,
+                                PySegmentManager::new(
+                                    operation_sender.clone(),
+                                    result_receiver.clone()
+                                )
+                            );
+                            let scope = pycell!(
+                                py,
+                                PyScope::new(operation_sender.clone(), result_receiver.clone())
+                            );
+                            let ids =
+                                pycell!(py, PyIds::new(operation_sender.clone(), result_receiver));
+                            let ap = pycell!(py, PyRelocatable::new((1, ap)));
+                            let fp = pycell!(py, PyRelocatable::new((1, fp)));
+                            let scope_module = PyModule::new(py, "cairo_scopes")?;
+                            let vm_exit_scope = wrap_pyfunction!(vm_exit_scope, scope_module)?;
+                            let globals = PyDict::new(py);
+                            let locals = PyDict::new(py);
+                            for (name, value) in py_scope.iter() {
+                                locals
+                                    .set_item(name, value)
+                                    .map_err(Into::<VirtualMachineError>::into)?;
+                            }
+                            globals.set_item("memory", memory).unwrap();
+                            globals.set_item("ids", ids).unwrap();
+                            globals.set_item("segments", segments).unwrap();
+                            globals.set_item("scope", scope).unwrap();
+                            globals.set_item("ap", ap).unwrap();
+                            globals.set_item("fp", fp).unwrap();
+                            globals.set_item("vm_exit_scope", vm_exit_scope).unwrap();
+                            py.run(&code, Some(globals), Some(locals)).unwrap();
+                            println!(" -- Ending python hint -- ");
+                            operation_sender
+                                .send(Operation::End)
+                                .map_err(|_| VirtualMachineError::PythonExecutorChannel)?;
+                            Ok(get_scope_variables(locals, py))
+                        });
+                    let (new_scope, exit_scope) = handle_messages(
+                        &hint_data.ids_data,
+                        &hint_data.ap_tracking,
+                        operation_receiver,
+                        result_sender,
+                        vm,
+                    )?;
+                    let new_vars = new_vars.join().unwrap().unwrap();
+                    Ok((new_vars, new_scope, exit_scope))
+                },
+            )
+            .unwrap();
         update_scope(exec_scopes, &new_vars);
         // This is a pretty horrible wip. Something similar could be done for exit_scope
         // (like making the thread return a boolean/the amount of times exit_scope should be called)
         if let Some(scope) = new_scope {
             enter_scope(exec_scopes, &scope);
+        }
+        if exit_scope {
+            exec_scopes.exit_scope()?;
         }
         Ok(())
     }
