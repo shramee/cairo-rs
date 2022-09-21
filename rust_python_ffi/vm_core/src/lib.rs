@@ -1,44 +1,43 @@
+use num_bigint::BigInt;
 use std::fmt::{self, Debug};
-use std::rc::Rc;
-use std::cell::RefCell;
 
 pub trait HintRunner {
-    fn run_hint(&self, memory: Option<Rc<RefCell<Memory>>>, code: &str) -> Result<(), ()>;
+    fn run_hint(&self, vm: &mut VM, memory: Option<Memory>, code: &str) -> Result<(), ()>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Memory {
-    data: Vec<usize>,
+    data: Vec<Vec<Option<BigInt>>>,
 }
 
 impl Memory {
     pub fn new() -> Memory {
-        Memory{data: vec![0; 32]}
+        Memory {
+            data: vec![vec![Some(BigInt::parse_bytes(b"0", 10).unwrap()); 1024]; 1024],
+        }
     }
 
-    pub fn set(&mut self, n: usize, m: usize) {
-        self.data[n] = m;
+    pub fn set(&mut self, addr: (usize, usize), m: BigInt) {
+        self.data[addr.0][addr.1] = Some(m);
     }
 
-    pub fn get(&self, i: usize) -> usize {
-        self.data[i]
+    pub fn get(&self, addr: (usize, usize)) -> Option<&BigInt> {
+        self.data[addr.0][addr.1].as_ref()
     }
 }
 
 pub struct VM {
-    memory: Rc<RefCell<Memory>>,
+    pub memory: Memory,
     code: Vec<usize>,
     ip: usize,
-    hint_runner: Option<Box<dyn HintRunner>>,
 }
 
 impl VM {
-    pub fn new(hint_runner: Option<Box<dyn HintRunner>>) -> VM {
+    pub fn new() -> VM {
         VM {
-            memory: Rc::new(RefCell::new(Memory::new())),
+            memory: Memory::new(),
             code: vec![0; 32],
             ip: 0,
-            hint_runner,
         }
     }
 
@@ -48,14 +47,16 @@ impl VM {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), ()> {
+    pub fn run(&mut self, hint_runner: &Box<dyn HintRunner>) -> Result<(), ()> {
         // opcode 0: exit
         // opcode 1: noop
         // opcode 2: execute hint
         while self.code[self.ip] != 0 {
             match self.code[self.ip] {
                 1 => {}
-                2 => { self.run_hint(); }
+                2 => {
+                    self.run_hint(hint_runner);
+                }
                 _ => return Err(()),
             }
             self.ip += 1;
@@ -63,14 +64,17 @@ impl VM {
         Ok(())
     }
 
-    fn run_hint(&mut self) {
-        if let Some(hint_runner) = &self.hint_runner {
-            let code = r#"
+    fn run_hint(&mut self, hint_runner: &Box<dyn HintRunner>) {
+        let code = r#"
 rv = fibonacci(x)
-vm_memory.set(16, 42)
+for i in range(1024):
+    for j in range(1024):
+        memory[(i, j)] = i*j
 "#;
-            hint_runner.run_hint(Some(Rc::clone(&self.memory)), code).unwrap();
-        }
+        let memory = self.memory.clone();
+        hint_runner
+            .run_hint(self, Some(memory), code)
+            .unwrap();
     }
 }
 
@@ -84,14 +88,14 @@ impl fmt::Debug for VM {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::VM;
+// #[cfg(test)]
+// mod tests {
+//     use crate::VM;
 
-    #[test]
-    fn memset_test() {
-        let mut vm = VM::new();
-        vm.memset(0, 1);
-        assert_eq!(vm.memget(0), 1);
-    }
-}
+//     #[test]
+//     fn memset_test() {
+//         let mut vm = VM::new();
+//         vm.memset(, 1);
+//         assert_eq!(vm.memget(0), 1);
+//     }
+// }

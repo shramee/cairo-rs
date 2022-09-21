@@ -1,9 +1,10 @@
+use std::collections::HashMap;
+
+use num_bigint::BigInt;
 use pyo3::{prelude::*, types::PyDict};
 use vm_core::VM;
 use vm_core::HintRunner;
 use vm_core::Memory;
-use std::rc::Rc;
-use std::cell::RefCell;
 
 #[pyclass(unsendable)]
 pub struct PyVM {
@@ -14,9 +15,8 @@ pub struct PyVM {
 impl PyVM {
     #[new]
     pub fn new() -> PyVM {
-        let hint_runner: Option<Box<dyn HintRunner>> = Some(Box::new(PythonHintRunner::new()));
         PyVM {
-            vm: VM::new(hint_runner),
+            vm: VM::new(),
         }
     }
 
@@ -29,24 +29,30 @@ impl PyVM {
     }
 
     pub fn run(&mut self) -> PyResult<()> {
-        self.vm.run().unwrap();
+        let hint_runner: Box<dyn HintRunner> = Box::new(PythonHintRunner::new());
+        self.vm.run(&hint_runner).unwrap();
         Ok(())
     }
 }
 
 #[pyclass(unsendable)]
+#[derive(Clone)]
 pub struct PyVmMemory {
-    memory: Rc<RefCell<Memory>>
+    memory: Memory,
+    changes: HashMap<(usize, usize), BigInt>,
 }
 
 #[pymethods]
 impl PyVmMemory {
-    pub fn set(&mut self, n: usize, m: usize) {
-        self.memory.borrow_mut().set(n, m)
+    #[setter]
+    pub fn __setitem__(&mut self, addr: (usize, usize), m: BigInt) -> PyResult<()> {
+        self.changes.insert((addr.0, addr.1), m);
+        Ok(())
     }
 
-    pub fn get(&self, i: usize) -> usize {
-        self.memory.borrow_mut().get(i)
+    #[getter]
+    pub fn __getitem__(&self, addr: (usize, usize)) -> Option<BigInt> {
+        self.memory.get(addr).cloned()
     }
 }
 
@@ -59,29 +65,28 @@ impl PythonHintRunner {
 }
 
 impl HintRunner for PythonHintRunner {
-    fn run_hint(&self, memory: Option<Rc<RefCell<Memory>>>, code: &str) -> Result<(), ()> {
+    fn run_hint(&self, vm: &mut VM, memory: Option<Memory>, code: &str) -> Result<(), ()> {
         Python::with_gil(|py| {
             let locals = PyDict::new(py);
 
             if let Some(m) = memory {
-                let memory = PyVmMemory{memory: m};
+                let memory = PyVmMemory { memory: m, changes: HashMap::new() };
                 let vmm = PyCell::new(py, memory).unwrap();
-                locals.set_item("vm_memory", vmm).unwrap();
+                locals.set_item("memory", vmm).unwrap();
+                locals.set_item("x", 7u32).unwrap();
 
-                locals.set_item("x", 7).unwrap();
                 py.run(
                     code,
                     None,
                     Some(locals),
                 ).unwrap();
 
-                let rv: u32 = locals.get_item("rv").unwrap().extract().unwrap();
-                println!("rv = {:?}", rv);
+                let changes = locals.get_item("memory").unwrap().extract::<PyVmMemory>().unwrap().changes;
 
-                let rv = vmm.borrow_mut().get(16);
-                println!("vmm[16] = {:?}", rv);
+                for (key, value) in changes {
+                    vm.memory.set(key, value);
+                }
             }
-
         });
         Ok(())
     }

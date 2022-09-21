@@ -13,7 +13,7 @@ def main():
     vm = ffi.PyVM()
     vm.load("11112")
     vm.run()
-    print(vm)
+    #print(vm)
 
 if __name__ == '__main__':
     main()
