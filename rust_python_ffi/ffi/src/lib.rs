@@ -1,14 +1,14 @@
+use num_bigint::BigInt;
 use pyo3::{prelude::*, types::PyDict};
-use vm_core::VM;
+use std::cell::RefCell;
+use std::rc::Rc;
 use vm_core::HintRunner;
 use vm_core::Memory;
-use std::rc::Rc;
-use std::cell::RefCell;
-use num_bigint::BigInt;
+use vm_core::VM;
 
 #[pyclass(unsendable)]
 pub struct PyVM {
-    vm: VM
+    vm: VM,
 }
 
 #[pymethods]
@@ -37,7 +37,7 @@ impl PyVM {
 
 #[pyclass(unsendable)]
 pub struct PyVmMemory {
-    memory: Rc<RefCell<Memory>>
+    memory: Rc<RefCell<Memory>>,
 }
 
 #[pymethods]
@@ -56,7 +56,7 @@ struct PythonHintRunner {}
 
 impl PythonHintRunner {
     pub fn new() -> PythonHintRunner {
-        PythonHintRunner{}
+        PythonHintRunner {}
     }
 }
 
@@ -66,16 +66,12 @@ impl HintRunner for PythonHintRunner {
             let locals = PyDict::new(py);
 
             if let Some(m) = memory {
-                let memory = PyVmMemory{memory: m};
+                let memory = PyVmMemory { memory: m };
                 let vmm = PyCell::new(py, memory).unwrap();
                 locals.set_item("memory", vmm).unwrap();
 
                 locals.set_item("x", 7u32).unwrap();
-                py.run(
-                    code,
-                    None,
-                    Some(locals),
-                ).unwrap();
+                py.run(code, None, Some(locals)).unwrap();
             }
         });
         Ok(())
