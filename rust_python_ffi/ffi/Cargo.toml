@@ -9,5 +9,6 @@ name = "ffi"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.16.5", features = ["extension-module"] }
+num-bigint = "0.4.3"
+pyo3 = { version = "0.16.5", features = ["extension-module", "num-bigint"] }
 vm_core = { path = "../vm_core" } 

@@ -4,6 +4,7 @@ use vm_core::HintRunner;
 use vm_core::Memory;
 use std::rc::Rc;
 use std::cell::RefCell;
+use num_bigint::BigInt;
 
 #[pyclass(unsendable)]
 pub struct PyVM {
@@ -41,12 +42,13 @@ pub struct PyVmMemory {
 
 #[pymethods]
 impl PyVmMemory {
-    pub fn set(&mut self, n: usize, m: usize) {
-        self.memory.borrow_mut().set(n, m)
+    pub fn __setitem__(&mut self, addr: (usize, usize), m: BigInt) -> PyResult<()> {
+        self.memory.borrow_mut().set(addr, m);
+        Ok(())
     }
 
-    pub fn get(&self, i: usize) -> usize {
-        self.memory.borrow_mut().get(i)
+    pub fn __getitem__(&self, addr: (usize, usize)) -> Option<BigInt> {
+        self.memory.borrow_mut().get(addr).cloned()
     }
 }
 
@@ -66,22 +68,15 @@ impl HintRunner for PythonHintRunner {
             if let Some(m) = memory {
                 let memory = PyVmMemory{memory: m};
                 let vmm = PyCell::new(py, memory).unwrap();
-                locals.set_item("vm_memory", vmm).unwrap();
+                locals.set_item("memory", vmm).unwrap();
 
-                locals.set_item("x", 7).unwrap();
+                locals.set_item("x", 7u32).unwrap();
                 py.run(
                     code,
                     None,
                     Some(locals),
                 ).unwrap();
-
-                let rv: u32 = locals.get_item("rv").unwrap().extract().unwrap();
-                println!("rv = {:?}", rv);
-
-                let rv = vmm.borrow_mut().get(16);
-                println!("vmm[16] = {:?}", rv);
             }
-
         });
         Ok(())
     }
