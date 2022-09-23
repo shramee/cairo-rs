@@ -378,8 +378,8 @@ impl VirtualMachine {
                         {
                             if res_num != dst_num {
                                 return Err(VirtualMachineError::DiffAssertValues(
-                                    res_num.num.clone(),
-                                    dst_num.num.clone(),
+                                    res_num.clone(),
+                                    dst_num.clone(),
                                 ));
                             };
                         };
@@ -631,14 +631,14 @@ impl VirtualMachine {
 mod tests {
     use super::*;
     use crate::{
-        any_box, bigint_str,
+        any_box, bigint_str, felt,
         hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
             BuiltinHintProcessor, HintProcessorData,
         },
         relocatable,
         types::{
             instruction::{Op1Addr, Register},
-            relocatable::Relocatable,
+            relocatable::{FieldElement, Relocatable},
         },
         utils::test_utils::*,
         vm::{
@@ -2148,10 +2148,7 @@ mod tests {
 
         assert_eq!(
             vm.opcode_assertions(&instruction, &operands),
-            Err(VirtualMachineError::DiffAssertValues(
-                bigint!(8),
-                bigint!(9)
-            ))
+            Err(VirtualMachineError::DiffAssertValues(felt!(8), felt!(9)))
         );
     }
 

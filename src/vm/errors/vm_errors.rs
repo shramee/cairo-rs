@@ -1,4 +1,4 @@
-use crate::types::relocatable::{MaybeRelocatable, Relocatable};
+use crate::types::relocatable::{FieldElement, MaybeRelocatable, Relocatable};
 use crate::vm::errors::memory_errors::MemoryError;
 use crate::vm::errors::runner_errors::RunnerError;
 use num_bigint::BigInt;
@@ -28,8 +28,8 @@ pub enum VirtualMachineError {
     UnconstrainedResJumpRel,
     #[error("Res.UNCONSTRAINED cannot be used with Opcode.ASSERT_EQ")]
     UnconstrainedResAssertEq,
-    #[error("ASSERT_EQ instruction failed; res:{0} != dst:{1}")]
-    DiffAssertValues(BigInt, BigInt),
+    #[error("ASSERT_EQ instruction failed; res:{0:?} != dst:{1:?}")]
+    DiffAssertValues(FieldElement, FieldElement),
     #[error("Call failed to write return-pc (inconsistent op0): {0:?} != {1:?}. Did you forget to increment ap?")]
     CantWriteReturnPc(MaybeRelocatable, MaybeRelocatable),
     #[error("Call failed to write return-fp (inconsistent dst): {0:?} != {1:?}. Did you forget to increment ap?")]
@@ -68,13 +68,13 @@ pub enum VirtualMachineError {
     ExpectedRelocatable(MaybeRelocatable),
     #[error("Failed to get ids for hint execution")]
     FailedToGetIds,
-    #[error("Assertion failed, {0}, is not less or equal to {1}")]
-    NonLeFelt(BigInt, BigInt),
+    #[error("Assertion failed, {0:?}, is not less or equal to {1:?}")]
+    NonLeFelt(FieldElement, FieldElement),
     #[error("Div out of range: 0 < {0} <= {1}")]
     OutOfValidRange(BigInt, BigInt),
     #[error("Assertion failed, 0 <= ids.a % PRIME < range_check_builtin.bound \n a = {0:?} is out of range")]
-    ValueOutOfRange(BigInt),
-    #[error("Value: {0} should be positive")]
+    ValueOutOfRange(FieldElement),
+    #[error("Value: {0:?} should be positive")]
     ValueNotPositive(BigInt),
     #[error("Unknown Hint: {0}")]
     UnknownHint(String),
@@ -82,8 +82,8 @@ pub enum VirtualMachineError {
     ValueOutsideValidRange(BigInt),
     #[error("split_int(): value is out of range")]
     SplitIntNotZero,
-    #[error("split_int(): Limb {0} is out of range.")]
-    SplitIntLimbOutOfRange(BigInt),
+    #[error("split_int(): Limb {0:?} is out of range.")]
+    SplitIntLimbOutOfRange(FieldElement),
     #[error("Failed to compare {0:?} and {1:?}, cant compare a relocatable to an integer value")]
     DiffTypeComparison(MaybeRelocatable, MaybeRelocatable),
     #[error("assert_not_equal failed: {0:?} =  {1:?}")]
@@ -92,16 +92,16 @@ pub enum VirtualMachineError {
     DiffIndexComp(Relocatable, Relocatable),
     #[error("Value: {0} is outside of the range [0, 2**250)")]
     ValueOutside250BitRange(BigInt),
-    #[error("Can't calculate the square root of negative number: {0})")]
-    SqrtNegative(BigInt),
+    #[error("Can't calculate the square root of negative number: {0:?})")]
+    SqrtNegative(FieldElement),
     #[error("{0} is not divisible by {1}")]
     SafeDivFail(BigInt, BigInt),
     #[error("Attempted to devide by zero")]
     DividedByZero,
-    #[error("Failed to calculate the square root of: {0})")]
-    FailedToGetSqrt(BigInt),
-    #[error("Assertion failed, {0} % {1} is equal to 0")]
-    AssertNotZero(BigInt, BigInt),
+    #[error("Failed to calculate the square root of: {0:?})")]
+    FailedToGetSqrt(FieldElement),
+    #[error("Assertion failed, {0:?} % {1} is equal to 0")]
+    AssertNotZero(FieldElement, BigInt),
     #[error(transparent)]
     MainScopeError(#[from] ExecScopeError),
     #[error("Failed to get scope variables")]
@@ -114,14 +114,14 @@ pub enum VirtualMachineError {
     NoDictTracker(usize),
     #[error("ict Error: No value found for key: {0}")]
     NoValueForKey(BigInt),
-    #[error("Assertion failed, a = {0} % PRIME is not less than b = {1} % PRIME")]
-    AssertLtFelt(BigInt, BigInt),
+    #[error("Assertion failed, a = {0:?} % PRIME is not less than b = {1:?} % PRIME")]
+    AssertLtFelt(FieldElement, FieldElement),
     #[error("find_elem() can only be used with n_elms <= {0}.\nGot: n_elms = {1}")]
     FindElemMaxSize(BigInt, BigInt),
     #[error(
-        "Invalid index found in find_element_index. Index: {0}.\nExpected key: {1}, found_key {2}"
+        "Invalid index found in find_element_index. Index: {0}.\nExpected key: {1:?}, found_key {2:?}"
     )]
-    InvalidIndex(BigInt, BigInt, BigInt),
+    InvalidIndex(BigInt, FieldElement, FieldElement),
     #[error("Found Key is None")]
     KeyNotFound,
     #[error("AP tracking data is None; could not apply correction to address")]
@@ -142,16 +142,16 @@ pub enum VirtualMachineError {
     CurrentAccessIndicesNotEmpty,
     #[error("Dict Error: Got the wrong value for dict_update, expected value: {0}, got: {1} for key: {2}")]
     WrongPrevValue(BigInt, BigInt, BigInt),
-    #[error("squash_dict_inner fail: Number of used accesses:{0} doesnt match the lengh: {1} of the access_indices at key: {2}")]
-    NumUsedAccessesAssertFail(BigInt, usize, BigInt),
+    #[error("squash_dict_inner fail: Number of used accesses:{0:?} doesnt match the lengh: {1} of the access_indices at key: {2}")]
+    NumUsedAccessesAssertFail(FieldElement, usize, BigInt),
     #[error("squash_dict_inner fail: local keys is not empty")]
     KeysNotEmpty,
     #[error("squash_dict_inner fail: No keys left but remaining_accesses > 0")]
     EmptyKeys,
     #[error("squash_dict fail: Accesses array size must be divisible by DictAccess.SIZE")]
     PtrDiffNotDivisibleByDictAccessSize,
-    #[error("squash_dict() can only be used with n_accesses<={0}. ' \nGot: n_accesses={1}")]
-    SquashDictMaxSizeExceeded(BigInt, BigInt),
+    #[error("squash_dict() can only be used with n_accesses<={0}. ' \nGot: n_accesses={1:?}")]
+    SquashDictMaxSizeExceeded(BigInt, FieldElement),
     #[error("squash_dict fail: n_accesses: {0} is too big to be converted into an iterator")]
     NAccessesTooBig(BigInt),
     #[error("Couldn't convert BigInt to usize")]
@@ -160,8 +160,8 @@ pub enum VirtualMachineError {
     BigintToU64Fail,
     #[error("Couldn't convert BigInt to u32")]
     BigintToU32Fail,
-    #[error("usort() can only be used with input_len<={0}. Got: input_len={1}.")]
-    UsortOutOfRange(u64, BigInt),
+    #[error("usort() can only be used with input_len<={0}. Got: input_len={1:?}.")]
+    UsortOutOfRange(u64, FieldElement),
     #[error("unexpected usort fail: positions_dict or key value pair not found")]
     UnexpectedPositionsDictFail,
     #[error("unexpected verify multiplicity fail: positions not found")]
@@ -188,12 +188,12 @@ pub enum VirtualMachineError {
     SecpVerifyZero(BigInt),
     #[error("Cant substract {0} from offset {1}, offsets cant be negative")]
     CantSubOffset(usize, usize),
-    #[error("unsafe_keccak() can only be used with length<={0}. Got: length={1}")]
-    KeccakMaxSize(BigInt, BigInt),
-    #[error("Invalid word size: {0}")]
-    InvalidWordSize(BigInt),
-    #[error("Invalid input length, Got: length={0}")]
-    InvalidKeccakInputLength(BigInt),
+    #[error("unsafe_keccak() can only be used with length<={0:?}. Got: length={1}")]
+    KeccakMaxSize(FieldElement, BigInt),
+    #[error("Invalid word size: {0:?}")]
+    InvalidWordSize(FieldElement),
+    #[error("Invalid input length, Got: length={0:?}")]
+    InvalidKeccakInputLength(FieldElement),
     #[error("None value was found in memory range cell")]
     NoneInMemoryRange,
     #[error("Expected integer, found: {0:?}")]

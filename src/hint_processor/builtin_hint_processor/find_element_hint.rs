@@ -26,10 +26,10 @@ pub fn find_element(
     let find_element_index = exec_scopes_proxy.get_int("find_element_index").ok();
     let elm_size = elm_size_bigint
         .to_usize()
-        .ok_or_else(|| VirtualMachineError::ValueOutOfRange(elm_size_bigint.num.clone()))?;
+        .ok_or_else(|| VirtualMachineError::ValueOutOfRange(elm_size_bigint.clone()))?;
     if elm_size == 0 {
         return Err(VirtualMachineError::ValueOutOfRange(
-            elm_size_bigint.num.clone(),
+            elm_size_bigint.clone(),
         ));
     }
 
@@ -43,8 +43,8 @@ pub fn find_element(
         if found_key != key {
             return Err(VirtualMachineError::InvalidIndex(
                 find_element_index_value,
-                key.num.clone(),
-                found_key.num.clone(),
+                key.clone(),
+                found_key.clone(),
             ));
         }
         insert_value_from_var_name(
@@ -58,14 +58,14 @@ pub fn find_element(
         Ok(())
     } else {
         if n_elms.is_negative() {
-            return Err(VirtualMachineError::ValueOutOfRange(n_elms.num.clone()));
+            return Err(VirtualMachineError::ValueOutOfRange(n_elms.clone()));
         }
 
         if let Ok(find_element_max_size) = exec_scopes_proxy.get_int_ref("find_element_max_size") {
             if &n_elms.to_bigint() > find_element_max_size {
                 return Err(VirtualMachineError::FindElemMaxSize(
                     find_element_max_size.clone(),
-                    n_elms.num.clone(),
+                    n_elms.to_bigint(),
                 ));
             }
         }
@@ -108,18 +108,18 @@ pub fn search_sorted_lower(
     let key = get_integer_from_var_name("key", vm_proxy, ids_data, ap_tracking)?;
 
     if !elm_size.is_positive() {
-        return Err(VirtualMachineError::ValueOutOfRange(elm_size.num.clone()));
+        return Err(VirtualMachineError::ValueOutOfRange(elm_size.clone()));
     }
 
     if n_elms.is_negative() {
-        return Err(VirtualMachineError::ValueOutOfRange(n_elms.num.clone()));
+        return Err(VirtualMachineError::ValueOutOfRange(n_elms.clone()));
     }
 
     if let Ok(find_element_max_size) = find_element_max_size {
         if n_elms.to_bigint() > find_element_max_size {
             return Err(VirtualMachineError::FindElemMaxSize(
                 find_element_max_size,
-                n_elms.num.clone(),
+                n_elms.to_bigint(),
             ));
         }
     }
@@ -150,6 +150,7 @@ pub fn search_sorted_lower(
 mod tests {
     use super::*;
     use crate::any_box;
+    use crate::felt;
     use crate::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor;
     use crate::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintProcessorData;
     use crate::hint_processor::builtin_hint_processor::hint_code;
@@ -157,6 +158,7 @@ mod tests {
     use crate::hint_processor::proxies::exec_scopes_proxy::get_exec_scopes_proxy;
     use crate::hint_processor::proxies::vm_proxy::get_vm_proxy;
     use crate::types::exec_scope::ExecutionScopes;
+    use crate::types::relocatable::FieldElement;
     use crate::types::relocatable::MaybeRelocatable;
     use crate::utils::test_utils::vm;
     use crate::utils::test_utils::*;
@@ -310,7 +312,7 @@ mod tests {
         )]));
         assert_eq!(
             run_hint!(vm, ids_data, hint_code::FIND_ELEMENT),
-            Err(VirtualMachineError::ValueOutOfRange(bigint!(0)))
+            Err(VirtualMachineError::ValueOutOfRange(felt!(0)))
         );
     }
 
@@ -322,7 +324,7 @@ mod tests {
         )]));
         assert_eq!(
             run_hint!(vm, ids_data, hint_code::FIND_ELEMENT),
-            Err(VirtualMachineError::ValueOutOfRange(bigint!(-1)))
+            Err(VirtualMachineError::ValueOutOfRange(felt!(-1)))
         );
     }
 
@@ -345,7 +347,7 @@ mod tests {
         )]));
         assert_eq!(
             run_hint!(vm, ids_data, hint_code::FIND_ELEMENT),
-            Err(VirtualMachineError::ValueOutOfRange(bigint!(-1)))
+            Err(VirtualMachineError::ValueOutOfRange(felt!(-1)))
         );
     }
 
@@ -423,7 +425,7 @@ mod tests {
         )]));
         assert_eq!(
             run_hint!(vm, ids_data, hint_code::SEARCH_SORTED_LOWER),
-            Err(VirtualMachineError::ValueOutOfRange(bigint!(0)))
+            Err(VirtualMachineError::ValueOutOfRange(felt!(0)))
         );
     }
 
@@ -435,7 +437,7 @@ mod tests {
         )]));
         assert_eq!(
             run_hint!(vm, ids_data, hint_code::SEARCH_SORTED_LOWER),
-            Err(VirtualMachineError::ValueOutOfRange(bigint!(-1)))
+            Err(VirtualMachineError::ValueOutOfRange(felt!(-1)))
         );
     }
 
@@ -461,7 +463,7 @@ mod tests {
         )]));
         assert_eq!(
             run_hint!(vm, ids_data, hint_code::SEARCH_SORTED_LOWER),
-            Err(VirtualMachineError::ValueOutOfRange(bigint!(-1)))
+            Err(VirtualMachineError::ValueOutOfRange(felt!(-1)))
         );
     }
 

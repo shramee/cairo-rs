@@ -181,7 +181,7 @@ pub fn squash_dict_inner_used_accesses_assert(
 
     if n_used_accesses != &felt!(access_indices_at_key.len()) {
         return Err(VirtualMachineError::NumUsedAccessesAssertFail(
-            n_used_accesses.num.clone(),
+            n_used_accesses.clone(),
             access_indices_at_key.len(),
             key,
         ));
@@ -269,7 +269,7 @@ pub fn squash_dict(
         if n_accesses.to_bigint() > max_size {
             return Err(VirtualMachineError::SquashDictMaxSizeExceeded(
                 max_size,
-                n_accesses.num.clone(),
+                n_accesses.clone(),
             ));
         };
     };
@@ -662,7 +662,7 @@ mod tests {
         assert_eq!(
             run_hint!(vm, ids_data, hint_code, exec_scopes_proxy),
             Err(VirtualMachineError::NumUsedAccessesAssertFail(
-                bigint!(5),
+                felt!(5),
                 4,
                 bigint!(5)
             ))
@@ -987,7 +987,7 @@ mod tests {
             run_hint!(vm, ids_data, hint_code, exec_scopes_proxy),
             Err(VirtualMachineError::SquashDictMaxSizeExceeded(
                 bigint!(1),
-                bigint!(2)
+                felt!(2)
             ))
         );
     }

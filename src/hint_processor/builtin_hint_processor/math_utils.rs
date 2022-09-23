@@ -76,7 +76,7 @@ pub fn assert_le_felt(
     let range_check_builtin = get_range_check_builtin(vm_proxy.builtin_runners)?;
     //Assert a <= b
     if a % vm_proxy.prime > b % vm_proxy.prime {
-        return Err(VirtualMachineError::NonLeFelt(a.num.clone(), b.num.clone()));
+        return Err(VirtualMachineError::NonLeFelt(a.clone(), b.clone()));
     }
     //Calculate value of small_inputs
     let value = if *a < felt!(range_check_builtin._bound.clone())
@@ -166,7 +166,7 @@ pub fn assert_nn(
     // assert 0 <= ids.a % PRIME < range_check_builtin.bound
     // as prime > 0, a % prime will always be > 0
     if a % vm_proxy.prime >= felt!(range_check_builtin._bound.clone()) {
-        return Err(VirtualMachineError::ValueOutOfRange(a.num.clone()));
+        return Err(VirtualMachineError::ValueOutOfRange(a.clone()));
     };
     Ok(())
 }
@@ -185,7 +185,7 @@ pub fn assert_not_zero(
     let value = get_integer_from_var_name("value", vm_proxy, ids_data, ap_tracking)?;
     if value.is_multiple_of(vm_proxy.prime) {
         return Err(VirtualMachineError::AssertNotZero(
-            value.num.clone(),
+            value.clone(),
             vm_proxy.prime.clone(),
         ));
     };
@@ -220,7 +220,7 @@ pub fn split_int(
     //Main Logic
     let res = &(value % vm_proxy.prime) % base;
     if res > *bound {
-        return Err(VirtualMachineError::SplitIntLimbOutOfRange(res.num));
+        return Err(VirtualMachineError::SplitIntLimbOutOfRange(res));
     }
     vm_proxy.memory.insert_value(&output, res)
 }
@@ -403,10 +403,7 @@ pub fn assert_lt_felt(
     // assert (ids.a % PRIME) < (ids.b % PRIME), \
     //     f'a = {ids.a % PRIME} is not less than b = {ids.b % PRIME}.'
     if a % vm_proxy.prime >= b % vm_proxy.prime {
-        return Err(VirtualMachineError::AssertLtFelt(
-            a.num.clone(),
-            b.num.clone(),
-        ));
+        return Err(VirtualMachineError::AssertLtFelt(a.clone(), b.clone()));
     };
     Ok(())
 }
@@ -658,7 +655,7 @@ mod tests {
         //Execute the hint
         assert_eq!(
             run_hint!(vm, ids_data, hint_code),
-            Err(VirtualMachineError::ValueOutOfRange(bigint!(-1)))
+            Err(VirtualMachineError::ValueOutOfRange(felt!(-1)))
         );
     }
 
@@ -741,7 +738,7 @@ mod tests {
         //Execute the hint
         assert_eq!(
             run_hint!(vm, ids_data, hint_code),
-            Err(VirtualMachineError::NonLeFelt(bigint!(2), bigint!(1)))
+            Err(VirtualMachineError::NonLeFelt(felt!(2), felt!(1)))
         );
     }
 
@@ -997,7 +994,7 @@ mod tests {
         let ids_data = ids_data!["value"];
         assert_eq!(
             run_hint!(vm, ids_data, hint_code),
-            Err(VirtualMachineError::AssertNotZero(bigint!(0), vm.prime))
+            Err(VirtualMachineError::AssertNotZero(felt!(0), vm.prime))
         );
     }
 
@@ -1022,7 +1019,7 @@ mod tests {
         assert_eq!(
             run_hint!(vm, ids_data, hint_code),
             Err(VirtualMachineError::AssertNotZero(
-                vm.prime.clone(),
+                felt!(vm.prime.clone()),
                 vm.prime
             ))
         );
@@ -1126,7 +1123,7 @@ mod tests {
         //Execute the hint
         assert_eq!(
             run_hint!(vm, ids_data, hint_code),
-            Err(VirtualMachineError::SplitIntLimbOutOfRange(bigint!(100)))
+            Err(VirtualMachineError::SplitIntLimbOutOfRange(felt!(100)))
         );
     }
 
@@ -1679,7 +1676,7 @@ mod tests {
         //Execute the hint
         assert_eq!(
             run_hint!(vm, ids_data, hint_code),
-            Err(VirtualMachineError::AssertLtFelt(bigint!(3), bigint!(2)))
+            Err(VirtualMachineError::AssertLtFelt(felt!(3), felt!(2)))
         );
     }
 

@@ -52,7 +52,7 @@ pub fn unsafe_keccak(
     if let Ok(keccak_max_size) = exec_scopes_proxy.get_int("__keccak_max_size") {
         if length.to_bigint() > keccak_max_size {
             return Err(VirtualMachineError::KeccakMaxSize(
-                length.num.clone(),
+                length.clone(),
                 keccak_max_size,
             ));
         }
@@ -67,7 +67,7 @@ pub fn unsafe_keccak(
     // transform to u64 to make ranges cleaner in the for loop below
     let u64_length = length
         .to_u64()
-        .ok_or_else(|| VirtualMachineError::InvalidKeccakInputLength(length.num.clone()))?;
+        .ok_or_else(|| VirtualMachineError::InvalidKeccakInputLength(length.clone()))?;
 
     let mut keccak_input = Vec::new();
     for (word_i, byte_i) in (0..u64_length).step_by(16).enumerate() {
@@ -80,7 +80,7 @@ pub fn unsafe_keccak(
         let n_bytes = cmp::min(16, u64_length - byte_i);
 
         if word.is_negative() || word >= &felt!(1).shl(8 * (n_bytes as u32)) {
-            return Err(VirtualMachineError::InvalidWordSize(word.num.clone()));
+            return Err(VirtualMachineError::InvalidWordSize(word.clone()));
         }
 
         let (_, mut bytes) = word.to_bytes_be();

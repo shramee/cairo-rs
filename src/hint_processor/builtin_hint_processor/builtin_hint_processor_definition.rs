@@ -508,12 +508,13 @@ mod tests {
     use crate::hint_processor::proxies::exec_scopes_proxy::get_exec_scopes_proxy;
     use crate::hint_processor::proxies::vm_proxy::get_vm_proxy;
     use crate::types::exec_scope::ExecutionScopes;
+    use crate::types::relocatable::FieldElement;
     use crate::types::relocatable::MaybeRelocatable;
     use crate::utils::test_utils::*;
     use crate::vm::errors::{exec_scope_errors::ExecScopeError, memory_errors::MemoryError};
     use crate::vm::vm_core::VirtualMachine;
     use crate::vm::vm_memory::memory::Memory;
-    use crate::{any_box, bigint};
+    use crate::{any_box, bigint, felt};
     use num_bigint::{BigInt, Sign};
     use std::any::Any;
 
@@ -772,7 +773,7 @@ mod tests {
         let exec_scopes_proxy = &mut get_exec_scopes_proxy(&mut exec_scopes);
         assert_eq!(
             run_hint!(vm, ids_data, hint_code, exec_scopes_proxy),
-            Err(VirtualMachineError::KeccakMaxSize(bigint!(5), bigint!(2)))
+            Err(VirtualMachineError::KeccakMaxSize(felt!(5), bigint!(2)))
         );
     }
 
@@ -819,7 +820,7 @@ mod tests {
         let exec_scopes_proxy = &mut &mut get_exec_scopes_proxy(&mut exec_scopes);
         assert_eq!(
             run_hint!(vm, ids_data, hint_code, exec_scopes_proxy),
-            Err(VirtualMachineError::InvalidWordSize(bigint!(-1)))
+            Err(VirtualMachineError::InvalidWordSize(felt!(-1)))
         );
     }
 

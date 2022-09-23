@@ -43,7 +43,7 @@ pub fn usort_body(
         if input_len_u64 > usort_max_size {
             return Err(VirtualMachineError::UsortOutOfRange(
                 usort_max_size,
-                input_len.num.clone(),
+                input_len.clone(),
             ));
         }
     }
@@ -150,7 +150,6 @@ pub fn verify_multiplicity_body(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::any_box;
     use crate::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
         BuiltinHintProcessor, HintProcessorData,
     };
@@ -161,8 +160,9 @@ mod tests {
     use crate::utils::test_utils::*;
     use crate::vm::errors::memory_errors::MemoryError;
     use crate::vm::vm_memory::memory::Memory;
+    use crate::{any_box, felt};
     use crate::{
-        types::relocatable::MaybeRelocatable,
+        types::relocatable::{FieldElement, MaybeRelocatable},
         vm::{runners::builtin_runner::RangeCheckBuiltinRunner, vm_core::VirtualMachine},
     };
     use num_bigint::Sign;
@@ -180,7 +180,7 @@ mod tests {
         let exec_scopes_proxy = &mut get_exec_scopes_proxy(&mut exec_scopes);
         assert_eq!(
             run_hint!(vm, ids_data, hint_code, exec_scopes_proxy),
-            Err(VirtualMachineError::UsortOutOfRange(1, bigint!(5)))
+            Err(VirtualMachineError::UsortOutOfRange(1, felt!(5)))
         );
     }
 }

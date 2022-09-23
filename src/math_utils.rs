@@ -13,7 +13,7 @@ use num_traits::{Signed, Zero};
 pub fn isqrt(n: &FieldElement) -> Result<FieldElement, VirtualMachineError> {
     //n.shr(1) = n.div_floor(2)
     if n.is_negative() {
-        return Err(VirtualMachineError::SqrtNegative(n.num.clone()));
+        return Err(VirtualMachineError::SqrtNegative(n.clone()));
     }
     let mut x = n.clone();
     let mut y = (x.clone() + felt!(1)).shr(1);
@@ -22,7 +22,7 @@ pub fn isqrt(n: &FieldElement) -> Result<FieldElement, VirtualMachineError> {
         y = (x.clone() + (n.div_floor(&x))).shr(1);
     }
     if !(x.pow(2) <= *n && *n < (x.clone() + felt!(1)).pow(2)) {
-        return Err(VirtualMachineError::FailedToGetSqrt(n.num.clone()));
+        return Err(VirtualMachineError::FailedToGetSqrt(n.clone()));
     };
     Ok(x)
 }
@@ -516,6 +516,6 @@ mod tests {
     #[test]
     fn calculate_isqrt_negative() {
         let n = felt!(-1);
-        assert_eq!(isqrt(&n), Err(VirtualMachineError::SqrtNegative(n.num)));
+        assert_eq!(isqrt(&n), Err(VirtualMachineError::SqrtNegative(n)));
     }
 }
