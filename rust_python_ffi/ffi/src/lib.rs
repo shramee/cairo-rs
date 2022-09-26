@@ -1,7 +1,6 @@
 use num_bigint::BigInt;
 use pyo3::{prelude::*, types::PyDict};
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 use vm_core::HintRunner;
 use vm_core::VMErr;
@@ -16,7 +15,6 @@ pub struct PyVM {
 impl PyVM {
     #[new]
     pub fn new() -> PyVM {
-        // let hint_runner: Option<Box<dyn HintRunner>> = Some(Box::new(BuiltinHintRunner::new()));
         PyVM {
             vm: Rc::new(RefCell::new(VM::new())),
         }

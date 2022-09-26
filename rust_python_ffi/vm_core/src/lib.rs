@@ -34,7 +34,6 @@ pub struct VM {
     pub memory: Memory,
     pub code: Vec<usize>,
     pub ip: usize,
-    // hint_runner: Option<Box<dyn HintRunner>>,
     pub hint_codes: HashMap<usize, String>,
 }
 
@@ -44,6 +43,7 @@ impl VM {
             memory: Memory::new(),
             code: vec![0; 32],
             ip: 0,
+            // This field holds the hint code that should be run in each ip.
             hint_codes: HashMap::new(),
         }
     }
@@ -66,6 +66,7 @@ print("Hint run succesfully from Python!")
         self.load(code);
     }
 
+    // This function mimics a normal VM instruction.
     pub fn step_instruction(&mut self) -> Result<(), ()> {
         // opcode 0: exit
         // opcode 1: noop
