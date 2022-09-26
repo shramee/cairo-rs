@@ -72,9 +72,7 @@ for i in range(1024):
         memory[(i, j)] = i*j
 "#;
         let memory = self.memory.clone();
-        hint_runner
-            .run_hint(self, Some(memory), code)
-            .unwrap();
+        hint_runner.run_hint(self, Some(memory), code).unwrap();
     }
 }
 
