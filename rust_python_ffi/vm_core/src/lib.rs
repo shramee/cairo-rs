@@ -1,10 +1,14 @@
+use std::collections::HashMap;
 use std::fmt::{self, Debug};
-use std::rc::Rc;
-use std::cell::RefCell;
 use num_bigint::BigInt;
 
+#[derive(Debug)]
+pub enum VMErr {
+    UnknownHint,
+}
+
 pub trait HintRunner {
-    fn run_hint(&self, memory: Option<Rc<RefCell<Memory>>>, code: &str) -> Result<(), ()>;
+    fn run_hint(&self, vm: &mut VM, hint_code: &String) -> Result<(), VMErr>;
 }
 
 #[derive(Debug)]
@@ -27,19 +31,20 @@ impl Memory {
 }
 
 pub struct VM {
-    memory: Rc<RefCell<Memory>>,
-    code: Vec<usize>,
-    ip: usize,
-    hint_runner: Option<Box<dyn HintRunner>>,
+    pub memory: Memory,
+    pub code: Vec<usize>,
+    pub ip: usize,
+    // hint_runner: Option<Box<dyn HintRunner>>,
+    pub hint_codes: HashMap<usize, String>,
 }
 
 impl VM {
-    pub fn new(hint_runner: Option<Box<dyn HintRunner>>) -> VM {
+    pub fn new() -> VM {
         VM {
-            memory: Rc::new(RefCell::new(Memory::new())),
+            memory: Memory::new(),
             code: vec![0; 32],
             ip: 0,
-            hint_runner,
+            hint_codes: HashMap::new(),
         }
     }
 
@@ -49,32 +54,69 @@ impl VM {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), ()> {
-        // opcode 0: exit
-        // opcode 1: noop
-        // opcode 2: execute hint
-        while self.code[self.ip] != 0 {
-            match self.code[self.ip] {
-                1 => {}
-                2 => { self.run_hint(); }
-                _ => return Err(()),
-            }
-            self.ip += 1;
-        }
-        Ok(())
-    }
-
-    fn run_hint(&mut self) {
-        if let Some(hint_runner) = &self.hint_runner {
-            let code = r#"
+    pub fn initialize(&mut self, code: &str) {
+        let hint_code = r#"
 rv = fibonacci(x)
 for i in range(1024):
     for j in range(1024):
-        memory[(i, j)] = i*j
+       memory[(i, j)] = i*j
+print("Hint run succesfully from Python!")
 "#;
-            hint_runner.run_hint(Some(Rc::clone(&self.memory)), code).unwrap();
+        self.hint_codes.insert(4, hint_code.to_string());
+        self.load(code);
+    }
+
+    pub fn step_instruction(&mut self) -> Result<(), ()> {
+        // opcode 0: exit
+        // opcode 1: noop
+        // opcode 2: execute hint
+        println!("Running awesome instruction");
+        self.ip += 1;
+        Ok(())
+    }
+
+    pub fn step_hint(&mut self, hint_runner: &Box<dyn HintRunner>) -> Result<(), ()> {
+        if self.code[self.ip] == 2 {
+            self.run_hint(hint_runner);
+        }
+
+        Ok(())
+    }
+
+    pub fn step(&mut self, hint_runner: &Box<dyn HintRunner>) -> Result<(), ()> {
+        self.step_hint(hint_runner)?;
+        self.step_instruction()?;
+
+        Ok(())
+    }
+
+    pub fn run_to_end(&mut self, hint_runner: &Box<dyn HintRunner>) -> Result<(), ()> {
+        while self.code[self.ip] != 0 {
+            self.step(hint_runner)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn print_output(&self) {
+        println!("Successful run");
+    }
+
+    pub fn run_hint(&mut self, hint_runner: &Box<dyn HintRunner>) {
+        if let Some(hint_code) = self.hint_codes.get(&self.ip) {
+            let hint_code = hint_code.clone();
+            hint_runner.run_hint(self, &hint_code).unwrap();
         }
     }
+}
+
+pub fn cairo_run(code: &str, hint_runner: &Box<dyn HintRunner>) -> Result<(),()> {
+    let mut vm = VM::new();
+    vm.initialize(code);
+    vm.run_to_end(hint_runner)?;
+    vm.print_output();
+
+    Ok(())
 }
 
 impl fmt::Debug for VM {
@@ -86,15 +128,3 @@ impl fmt::Debug for VM {
             .finish()
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::VM;
-
-//     #[test]
-//     fn memset_test() {
-//         let mut vm = VM::new();
-//         vm.memset(0, 1);
-//         assert_eq!(vm.memget(0), 1);
-//     }
-// }
