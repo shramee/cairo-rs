@@ -87,15 +87,3 @@ impl fmt::Debug for VM {
             .finish()
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::VM;
-
-//     #[test]
-//     fn memset_test() {
-//         let mut vm = VM::new();
-//         vm.memset(, 1);
-//         assert_eq!(vm.memget(0), 1);
-//     }
-// }
