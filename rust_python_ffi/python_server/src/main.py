@@ -1,7 +1,5 @@
 import ffi
 
-import ffi
-
 def fibonacci(n):
     a = 1
     b = 1
@@ -12,8 +10,6 @@ def fibonacci(n):
     return c
 
 def main():
-    # vm = ffi.PyVM()
-    # vm.load("11112")
     ffi.cairo_run("11112")
 
 if __name__ == '__main__':
