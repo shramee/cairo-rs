@@ -8,6 +8,7 @@ edition = "2021"
 [features]
 default = ["with_mimalloc"]
 with_mimalloc = []
+ffi_test_utils = []
 
 [dependencies]
 mimalloc = { version = "0.1.29", default-features = false }

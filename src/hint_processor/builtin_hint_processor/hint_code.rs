@@ -1,5 +1,5 @@
+#[cfg(not(feature = "ffi_test_utils"))]
 pub(crate) const ADD_SEGMENT: &str = "memory[ap] = segments.add()";
-
 pub(crate) const VM_ENTER_SCOPE: &str = "vm_enter_scope()";
 pub(crate) const VM_EXIT_SCOPE: &str = "vm_exit_scope()";
 
@@ -26,6 +26,7 @@ pub(crate) const ASSERT_NN: &str = r#"from starkware.cairo.common.math_utils imp
 assert_integer(ids.a)
 assert 0 <= ids.a % PRIME < range_check_builtin.bound, f'a = {ids.a} is out of range.'"#;
 
+#[cfg(not(feature = "ffi_test_utils"))]
 pub(crate) const ASSERT_NOT_ZERO: &str = r#"from starkware.cairo.common.math_utils import assert_integer
 assert_integer(ids.value)
 assert ids.value % PRIME != 0, f'assert_not_zero failed: {ids.value} = 0.'"#;
