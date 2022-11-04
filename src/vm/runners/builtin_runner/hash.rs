@@ -10,7 +10,8 @@ use crate::vm::vm_memory::memory::Memory;
 use crate::vm::vm_memory::memory_segments::MemorySegmentManager;
 use num_bigint::{BigInt, Sign};
 use num_integer::Integer;
-use starknet_crypto::{pedersen_hash, FieldElement};
+use starknet_crypto::FieldElement;
+use starknet_signature::pedersen_hash;
 
 #[derive(Debug)]
 pub struct HashBuiltinRunner {
