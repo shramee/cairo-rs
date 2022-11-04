@@ -8,10 +8,10 @@ use crate::vm::errors::runner_errors::RunnerError;
 use crate::vm::vm_core::VirtualMachine;
 use crate::vm::vm_memory::memory::Memory;
 use crate::vm::vm_memory::memory_segments::MemorySegmentManager;
-use num_bigint::{BigInt, Sign, BigUint};
+use num_bigint::{BigInt, BigUint, Sign};
 use num_integer::Integer;
-use starknet_crypto::{FieldElement};
-use starknet_signature::{Fq, pedersen_hash};
+use starknet_crypto::FieldElement;
+use starknet_signature::{pedersen_hash, Fq};
 
 #[derive(Debug)]
 pub struct HashBuiltinRunner {
@@ -112,7 +112,9 @@ impl HashBuiltinRunner {
             //Compute pedersen Hash
             let fq_result_fq_params = pedersen_hash(&fqx, &fqy);
             let fq_result: BigUint = fq_result_fq_params.into();
-            let fe_result = FieldElement {inner: fq_result.into()};
+            let fe_result = FieldElement {
+                inner: fq_result.into(),
+            };
             // let fe_result = FieldElement {inner: Fp256::from(fq_result)};
             //Convert result from FieldElement to MaybeRelocatable
             let r_byte_slice = fe_result.to_bytes_be();
