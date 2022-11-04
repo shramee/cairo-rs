@@ -1,0 +1,56 @@
+[package]
+name = "starknet-crypto"
+version = "0.1.0"
+authors = ["Jonathan LEI <me@xjonathan.dev>"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+readme = "README.md"
+repository = "https://github.com/xJonathanLEI/starknet-rs"
+homepage = "https://starknet.rs/"
+description = """
+Low-level cryptography utilities for StarkNet
+"""
+keywords = ["ethereum", "starknet", "web3"]
+
+[dependencies]
+starknet-ff = { version = "0.1.0", path = "../starknet-ff" }
+crypto-bigint = "0.3.2"
+hmac = "0.11.0"
+num-bigint = "0.4.3"
+num-integer = "0.1.44"
+num-traits = "0.2.14"
+rfc6979 = "0.1.0"
+sha2 = "0.9.9"
+thiserror = "1.0.30"
+zeroize = "1.5.0"
+hex = "0.4.3"
+
+[dev-dependencies]
+criterion = "0.3.5"
+hex = "0.4.3"
+hex-literal = "0.3.4"
+serde = { version = "1.0.133", features = ["derive"] }
+serde_json = "1.0.74"
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3.29"
+
+[[bench]]
+name = "pedersen_hash"
+harness = false
+
+[[bench]]
+name = "ecdsa_get_public_key"
+harness = false
+
+[[bench]]
+name = "ecdsa_sign"
+harness = false
+
+[[bench]]
+name = "ecdsa_verify"
+harness = false
+
+[[bench]]
+name = "rfc6979_generate_k"
+harness = false

@@ -292,6 +292,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
+name = "bigdecimal"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aaf33151a6429fe9211d1b276eafdf70cdff28b071e76c0b0e1503221ea3744"
+dependencies = [
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -406,7 +417,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.2",
  "sha3",
- "starknet-crypto",
+ "starknet-crypto 0.1.0",
  "starknet-signature",
  "thiserror",
 ]
@@ -1992,9 +2003,26 @@ dependencies = [
  "serde_json",
  "serde_with",
  "sha3",
- "starknet-crypto",
- "starknet-ff",
+ "starknet-crypto 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "starknet-ff 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
+]
+
+[[package]]
+name = "starknet-crypto"
+version = "0.1.0"
+dependencies = [
+ "crypto-bigint 0.3.2",
+ "hex",
+ "hmac 0.11.0",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "rfc6979 0.1.0",
+ "sha2 0.9.9",
+ "starknet-ff 0.1.0",
+ "thiserror",
+ "zeroize",
 ]
 
 [[package]]
@@ -2011,7 +2039,7 @@ dependencies = [
  "num-traits",
  "rfc6979 0.1.0",
  "sha2 0.9.9",
- "starknet-ff",
+ "starknet-ff 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
  "zeroize",
 ]
@@ -2025,6 +2053,20 @@ dependencies = [
  "ark-ff",
  "ark-serialize",
  "ark-std",
+]
+
+[[package]]
+name = "starknet-ff"
+version = "0.1.0"
+dependencies = [
+ "ark-ff",
+ "bigdecimal",
+ "crypto-bigint 0.3.2",
+ "getrandom",
+ "hex",
+ "num-bigint",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -2093,7 +2135,7 @@ checksum = "7e8199e756cc1ba3a8cd8287368b2bbd3bf7a876e98b3eea8abc5e851ee58bc5"
 dependencies = [
  "async-trait",
  "starknet-core",
- "starknet-crypto",
+ "starknet-crypto 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
 ]
 

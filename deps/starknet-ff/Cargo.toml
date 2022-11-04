@@ -1,0 +1,35 @@
+[package]
+name = "starknet-ff"
+version = "0.1.0"
+authors = ["Jonathan LEI <me@xjonathan.dev>"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+readme = "README.md"
+repository = "https://github.com/xJonathanLEI/starknet-rs"
+homepage = "https://starknet.rs/"
+description = """
+StarkNet field element type
+"""
+keywords = ["ethereum", "starknet", "web3"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[dependencies]
+ark-ff = "0.3.0"
+bigdecimal = { version = "0.3.0", optional = true }
+crypto-bigint = "0.3.2"
+hex = "0.4.3"
+num-bigint = { version = "0.4.3", optional = true }
+serde = "1.0.133"
+thiserror = "1.0.30"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2.3", features = ["js"] }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3.29"
+
+[features]
+default = ["bigdecimal"]
+bigdecimal = ["dep:bigdecimal", "dep:num-bigint"]

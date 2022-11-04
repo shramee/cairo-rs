@@ -8,10 +8,10 @@ use crate::vm::errors::runner_errors::RunnerError;
 use crate::vm::vm_core::VirtualMachine;
 use crate::vm::vm_memory::memory::Memory;
 use crate::vm::vm_memory::memory_segments::MemorySegmentManager;
-use num_bigint::{BigInt, Sign};
+use num_bigint::{BigInt, Sign, BigUint};
 use num_integer::Integer;
-use starknet_crypto::FieldElement;
-use starknet_signature::pedersen_hash;
+use starknet_crypto::{FieldElement};
+use starknet_signature::{Fq, pedersen_hash};
 
 #[derive(Debug)]
 pub struct HashBuiltinRunner {
@@ -105,8 +105,15 @@ impl HashBuiltinRunner {
                 (Ok(field_element_a), Ok(field_element_b)) => (field_element_a, field_element_b),
                 _ => return Err(RunnerError::FailedStringConversion),
             };
+
+            let fqx = Fq::new(x.inner.0);
+            let fqy = Fq::new(y.inner.0);
+
             //Compute pedersen Hash
-            let fe_result = pedersen_hash(&x, &y);
+            let fq_result_fq_params = pedersen_hash(&fqx, &fqy);
+            let fq_result: BigUint = fq_result_fq_params.into();
+            let fe_result = FieldElement {inner: fq_result.into()};
+            // let fe_result = FieldElement {inner: Fp256::from(fq_result)};
             //Convert result from FieldElement to MaybeRelocatable
             let r_byte_slice = fe_result.to_bytes_be();
             let result = BigInt::from_bytes_be(Sign::Plus, &r_byte_slice);

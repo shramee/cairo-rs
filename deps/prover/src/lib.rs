@@ -13,11 +13,12 @@ use ark_ff::UniformRand;
 use ark_ff::{BigInteger, PrimeField};
 use js_sys::Uint8Array;
 use rand::rngs::OsRng;
-use starknet_curve::{Fq, Fr};
+// use starknet_curve::{Fq, Fr};
 
 use error::Error;
 use pedersen::compute_hash_on_elements;
 pub use pedersen::pedersen_hash;
+pub use starknet_curve::{Fq, Fr};
 use signature::{parameters, private_key_to_public_key, sign as starknet_sign};
 use util::{bytes_safe, try_bytes_to_field};
 use wasm_bindgen::prelude::*;
