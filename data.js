@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1688302315602,
+  "lastUpdate": 1702068273057,
   "repoUrl": "https://github.com/shramee/cairo-rs",
   "entries": {
     "Benchmark": [
@@ -69574,6 +69574,96 @@ window.BENCHMARK_DATA = {
             "name": "parse program",
             "value": 28430368,
             "range": "± 1548280",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "99273364+fmoletta@users.noreply.github.com",
+            "name": "fmoletta",
+            "username": "fmoletta"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8a2ef24c1ca258f1d1d230cbbd1478cd1d4cf9db",
+          "message": "perf: Add `extensive_hints` feature to prevent performance regression for the common use-case (#1503)\n\n* Gate hint changes behind new feature\n\n* Add feature documentation\n\n* Add load_program feature to workflows\n\n* Fix\n\n* Fixes\n\n* Rename feature\n\n* Add changelog\n\n* Fix hint name in comment\n\n* Update workflow\n\n* Fix test\n\n* Fix test\n\n* Two separate step_hint methods for each feature",
+          "timestamp": "2023-12-05T19:30:45Z",
+          "tree_id": "5f70c37c87ec87c47bf5ff60d39362c62fa5cf55",
+          "url": "https://github.com/shramee/cairo-rs/commit/8a2ef24c1ca258f1d1d230cbbd1478cd1d4cf9db"
+        },
+        "date": 1702068270884,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "add_u64_with_felt/1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "add_u64_with_felt/2",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "add_u64_with_felt/3",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "add_u64_with_felt/4",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "add_u64_with_felt/5",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "add_u64_with_felt/6",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "add_u64_with_felt/7",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "add_u64_with_felt/8",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "build runner",
+            "value": 1158,
+            "range": "± 16",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "initialize",
+            "value": 44920,
+            "range": "± 718",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse program",
+            "value": 11822060,
+            "range": "± 134619",
             "unit": "ns/iter"
           }
         ]
