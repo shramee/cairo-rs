@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1702068273057,
+  "lastUpdate": 1727204389825,
   "repoUrl": "https://github.com/shramee/cairo-rs",
   "entries": {
     "Benchmark": [
@@ -69664,6 +69664,42 @@ window.BENCHMARK_DATA = {
             "name": "parse program",
             "value": 11822060,
             "range": "± 134619",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gonzalezcalderonjulian@gmail.com",
+            "name": "Julian Gonzalez Calderon",
+            "username": "JulianGCalderon"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "63b4a55758a0700e8a973a34c381ec54b3e8f63b",
+          "message": "Add Debug scripts (#1839)\n\n* Add debug scripts\n\n* Add debugging document\n\n* Add changelog\n\n* Revert changelog\n\n* Improve script usage code blocks\n\n* Remove extra space",
+          "timestamp": "2024-09-23T15:24:24Z",
+          "tree_id": "1344c8f88475ec4d8af641d5b2313aa514af5b86",
+          "url": "https://github.com/shramee/cairo-rs/commit/63b4a55758a0700e8a973a34c381ec54b3e8f63b"
+        },
+        "date": 1727204387707,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "initialize",
+            "value": 14115,
+            "range": "± 228",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "parse program",
+            "value": 8424182,
+            "range": "± 96411",
             "unit": "ns/iter"
           }
         ]
